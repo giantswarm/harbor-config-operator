@@ -27,10 +27,12 @@ func init() {
 type HarborConfigurationSpec struct {
 	HarborTarget HarborTarget `json:"harborTarget"`
 	Registry     Registry     `json:"registry"`
+	ProjectReq   ProjectReq   `json:"projectReq"`
 }
 
 type HarborConfigurationStatus struct {
-	RegistryId int64 `json:"id"`
+	RegistryId int64  `json:"registryId"`
+	ProjectId  string `json:"projectId"`
 }
 
 //+kubebuilder:object:root=true
@@ -76,4 +78,15 @@ type RegistryCredential struct {
 
 	// Credential type, such as 'basic', 'oauth'.
 	Type string `json:"type,omitempty"`
+}
+
+type ProjectReq struct {
+	ProjectName     string           `json:"projectName"`
+	ProjectMetadata *ProjectMetadata `json:"projectMetadata"`
+	StorageLimit    *int64           `json:"storage_limit,omitempty"`
+	RegistryID      *int64           `json:"registry_id,omitempty"`
+}
+
+type ProjectMetadata struct {
+	Public string `json:"public,omitempty"`
 }

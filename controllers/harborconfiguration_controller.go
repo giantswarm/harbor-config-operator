@@ -90,6 +90,22 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		}
 	}
 
+	// Create or delete project
+	myProject := &modelv2.ProjectReq{
+		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
+		Metadata:     harborConfiguration.Spec.ProjectReq.ProjectMetadata,
+		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
+		RegistryID:   harborConfiguration.Spec.ProjectReq.RegistryID,
+	}
+
+	err = client.NewProject(ctx, myProject)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
