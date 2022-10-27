@@ -1,0 +1,6 @@
+domain: harbor.configuration
+layout:
+- go.kubebuilder.io/v3
+projectName: harbor-config-operator
+repo: github.com/giantswarm/harbor-config-operator
+version: "3"
