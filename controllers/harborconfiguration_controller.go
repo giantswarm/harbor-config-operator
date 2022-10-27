@@ -24,7 +24,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/giantswarm/harbor-config-operator/api/v1alpha1"
 	harborconfigurationv1alpha1 "github.com/giantswarm/harbor-config-operator/api/v1alpha1"
+	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
+	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 )
 
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
@@ -49,7 +52,43 @@ type HarborConfigurationReconciler struct {
 func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var harborConfiguration v1alpha1.HarborConfiguration
+
+	err := r.Get(ctx, req.NamespacedName, &harborConfiguration)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Set target harbor cluster
+
+	client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Populate registry
+
+	myRegistry := &modelv2.Registry{
+		Name:        harborConfiguration.Spec.Registry.Name,
+		Type:        harborConfiguration.Spec.Registry.Type,
+		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
+		Description: harborConfiguration.Spec.Registry.Description,
+		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+	}
+
+	// Create or delete registry
+
+	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
+		err = client.NewRegistry(ctx, myRegistry)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }

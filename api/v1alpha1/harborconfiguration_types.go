@@ -20,28 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// HarborConfigurationSpec defines the desired state of HarborConfiguration
-type HarborConfigurationSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of HarborConfiguration. Edit harborconfiguration_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+func init() {
+	SchemeBuilder.Register(&HarborConfiguration{}, &HarborConfigurationList{})
 }
 
-// HarborConfigurationStatus defines the observed state of HarborConfiguration
+type HarborConfigurationSpec struct {
+	HarborTarget HarborTarget `json:"harborTarget"`
+	Registry     Registry     `json:"registry"`
+}
+
 type HarborConfigurationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	RegistryId int64 `json:"id"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// HarborConfiguration is the Schema for the harborconfigurations API
 type HarborConfiguration struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,13 +46,34 @@ type HarborConfiguration struct {
 
 //+kubebuilder:object:root=true
 
-// HarborConfigurationList contains a list of HarborConfiguration
 type HarborConfigurationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []HarborConfiguration `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&HarborConfiguration{}, &HarborConfigurationList{})
+type HarborTarget struct {
+	ApiUrl   string `json:"apiUrl"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Registry struct {
+	Name              string              `json:"name"`
+	Type              string              `json:"type"`
+	TargetRegistryUrl string              `json:"targetRegistryUrl"`
+	Description       string              `json:"description,omitempty"`
+	Credential        *RegistryCredential `json:"credential,omitempty"`
+}
+
+type RegistryCredential struct {
+
+	// Access key, e.g. user name when credential type is 'basic'.
+	AccessKey string `json:"access_key,omitempty"`
+
+	// Access secret, e.g. password when credential type is 'basic'.
+	AccessSecret string `json:"access_secret,omitempty"`
+
+	// Credential type, such as 'basic', 'oauth'.
+	Type string `json:"type,omitempty"`
 }
