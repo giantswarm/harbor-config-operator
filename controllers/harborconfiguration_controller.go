@@ -51,7 +51,7 @@ type HarborConfigurationReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-
+	// Need to add update function and have logic to tell reconiler what to do
 	var harborConfiguration v1alpha1.HarborConfiguration
 
 	err := r.Get(ctx, req.NamespacedName, &harborConfiguration)
@@ -77,7 +77,8 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Create or delete registry
-
+	// Need to update logic to tell if deletion should be called as all in same loop
+	// eg if i delete a registry it shouldnt also delete my projects
 	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
 		err = client.NewRegistry(ctx, myRegistry)
 		if err != nil {
@@ -91,6 +92,7 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	// Create or delete project
+	// Need logic to tell if deletion should be called
 	myProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
 		Metadata:     harborConfiguration.Spec.ProjectReq.ProjectMetadata,
@@ -102,10 +104,33 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
 	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	// Create or delete a replication rule
+	err = client.NewReplicationPolicy(ctx,
+		harborConfiguration.Spec.Replication.SourceRegistry,
+		harborConfiguration.Spec.Replication.DestinationRegistry,
+		harborConfiguration.Spec.Replication.ReplicateDeletion,
+		harborConfiguration.Spec.Replication.Override,
+		harborConfiguration.Spec.Replication.EnablePolicy,
+		harborConfiguration.Spec.Replication.Filters,
+		harborConfiguration.Spec.Replication.Trigger,
+		harborConfiguration.Spec.Replication.DestinationNamespace,
+		harborConfiguration.Spec.Replication.Description,
+		harborConfiguration.Spec.Replication.Name)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 

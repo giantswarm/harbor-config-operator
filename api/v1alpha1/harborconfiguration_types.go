@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,14 +26,16 @@ func init() {
 }
 
 type HarborConfigurationSpec struct {
-	HarborTarget HarborTarget `json:"harborTarget"`
-	Registry     Registry     `json:"registry"`
-	ProjectReq   ProjectReq   `json:"projectReq"`
+	HarborTarget HarborTarget `json:"harborTarget,omitempty"`
+	Registry     Registry     `json:"registry,omitempty"`
+	ProjectReq   ProjectReq   `json:"projectReq,omitempty"`
+	Replication  Replication  `json:"replication,omitempty"`
 }
 
 type HarborConfigurationStatus struct {
-	RegistryId int64  `json:"registryId"`
-	ProjectId  string `json:"projectId"`
+	RegistryId    int64  `json:"registryId,omitempty"`
+	ProjectId     string `json:"projectId,omitempty"`
+	ReplicationId int64  `json:"replicationId,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -51,19 +54,19 @@ type HarborConfiguration struct {
 type HarborConfigurationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HarborConfiguration `json:"items"`
+	Items           []HarborConfiguration `json:"items,omitempty"`
 }
 
 type HarborTarget struct {
-	ApiUrl   string `json:"apiUrl"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ApiUrl   string `json:"apiUrl,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type Registry struct {
-	Name              string              `json:"name"`
-	Type              string              `json:"type"`
-	TargetRegistryUrl string              `json:"targetRegistryUrl"`
+	Name              string              `json:"name,omitempty"`
+	Type              string              `json:"type,omitempty"`
+	TargetRegistryUrl string              `json:"targetRegistryUrl,omitempty"`
 	Description       string              `json:"description,omitempty"`
 	Credential        *RegistryCredential `json:"credential,omitempty"`
 }
@@ -81,12 +84,21 @@ type RegistryCredential struct {
 }
 
 type ProjectReq struct {
-	ProjectName     string           `json:"projectName"`
-	ProjectMetadata *ProjectMetadata `json:"projectMetadata"`
-	StorageLimit    *int64           `json:"storage_limit,omitempty"`
-	RegistryID      *int64           `json:"registry_id,omitempty"`
+	ProjectName     string                   `json:"projectName,omitempty"`
+	ProjectMetadata *modelv2.ProjectMetadata `json:"projectMetadata,omitempty"`
+	StorageLimit    *int64                   `json:"storage_limit,omitempty"`
+	RegistryID      *int64                   `json:"registry_id,omitempty"`
 }
 
-type ProjectMetadata struct {
-	Public string `json:"public,omitempty"`
+type Replication struct {
+	Name                 string                       `json:"name,omitempty"`
+	DestinationNamespace string                       `json:"destinationNamespace,omitempty"`
+	Description          string                       `json:"description,omitempty"`
+	SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
+	DestinationRegistry  *modelv2.Registry            `json:"destinationRegistry,omitempty"`
+	EnablePolicy         bool                         `json:"enablePolicy,omitempty"`
+	ReplicateDeletion    bool                         `json:"replicateDeletion,omitempty"`
+	Override             bool                         `json:"override,omitempty"`
+	Filters              []*modelv2.ReplicationFilter `json:"filters,omitempty"`
+	Trigger              *modelv2.ReplicationTrigger  `json:"trigger,omitempty"`
 }
