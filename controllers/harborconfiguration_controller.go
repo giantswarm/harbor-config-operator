@@ -253,6 +253,7 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		}
 
 		err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
+		// Experienced some flaky
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -260,12 +261,12 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		return ctrl.Result{}, err
 	}
 
-	// trigger := &modelv2.StartReplicationExecution{
-	// 	PolicyID: replicationFound.ID,
-	// }
-	// err = client.TriggerReplicationExecution(ctx, trigger)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
+	trigger := &modelv2.StartReplicationExecution{
+		PolicyID: replicationFound.ID,
+	}
+	err = client.TriggerReplicationExecution(ctx, trigger)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, err
 }

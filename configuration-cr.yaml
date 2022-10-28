@@ -18,9 +18,12 @@ spec:
     public: true
   replication:
     name: test-replication-rule
+    enablePolicy: true
     filters:
-    - type: name
-      value: library/alpine
-
-
-      
+    - type: tag
+      value: nginx
+      decoration: matches
+    trigger:
+      type: scheduled
+      trigger_settings:
+        cron: "* * * * * *"

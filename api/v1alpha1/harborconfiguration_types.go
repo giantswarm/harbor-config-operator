@@ -90,14 +90,13 @@ type ProjectReq struct {
 }
 
 type Replication struct {
-	Name                 string `json:"name,omitempty"`
-	DestinationNamespace string `json:"destinationNamespace,omitempty"`
-	Description          string `json:"description,omitempty"`
-	// SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
-	DestinationRegistry *apiextensions.JSON  `json:"destinationRegistry,omitempty"`
-	EnablePolicy        bool                 `json:"enablePolicy,omitempty"`
-	ReplicateDeletion   bool                 `json:"replicateDeletion,omitempty"`
-	Override            bool                 `json:"override,omitempty"`
-	Filters             []apiextensions.JSON `json:"filters,omitempty"`
-	Trigger             *apiextensions.JSON  `json:"trigger,omitempty"`
+	Name                 string               `json:"name,omitempty"`
+	DestinationNamespace string               `json:"destinationNamespace,omitempty"`
+	Description          string               `json:"description,omitempty"`
+	DestinationRegistry  *apiextensions.JSON  `json:"destinationRegistry,omitempty"`
+	EnablePolicy         bool                 `json:"enablePolicy,omitempty"`
+	ReplicateDeletion    bool                 `json:"replicateDeletion,omitempty"`
+	Override             bool                 `json:"override,omitempty"`
+	Filters              []apiextensions.JSON `json:"filters,omitempty"`
+	Trigger              *apiextensions.JSON  `json:"trigger,omitempty"`
 }
