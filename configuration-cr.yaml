@@ -8,7 +8,7 @@ spec:
     username: admin
     password: Harbor12345
   registry:
-    name: crd-docker-registryy
+    name: crd-docker-registryyy
     type: docker-hub
     targetRegistryUrl: https://hub.docker.com
     description: Endpoint created via crd

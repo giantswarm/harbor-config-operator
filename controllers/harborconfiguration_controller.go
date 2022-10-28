@@ -19,15 +19,16 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"errors"
 
 	harborconfigurationv1alpha1 "github.com/giantswarm/harbor-config-operator/api/v1alpha1"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
+	harborerrors "github.com/mittwald/goharbor-client/v5/apiv2/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
@@ -81,11 +82,34 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	// Need to update logic to tell if deletion should be called as all in same loop
 	// eg if i delete a registry it shouldnt also delete my projects
 
-	// if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
+	// Try To get Registry. If not found, create one.
+	// If found, update it.
+	// If weird error, error this shit out.
 	err = client.NewRegistry(ctx, myRegistry)
+	hErr := &harborerrors.ErrRegistryNameAlreadyExists{}
+	if err != nil && !errors.Is(err, hErr) { // TODO ADD WEIRD CONDITION CHECK
+		return ctrl.Result{}, err
+	}
+	found, err := client.GetRegistryByName(ctx, myRegistry.Name)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	update := &modelv2.RegistryUpdate{
+		Name:        &harborConfiguration.Spec.Registry.Name,
+		URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
+		Description: &harborConfiguration.Spec.Registry.Description,
+	}
+	if harborConfiguration.Spec.Registry.Credential != nil {
+		update.AccessKey = &harborConfiguration.Spec.Registry.Credential.AccessKey
+		update.AccessSecret = &harborConfiguration.Spec.Registry.Credential.AccessSecret
+		update.CredentialType = &harborConfiguration.Spec.Registry.Credential.Type
+	}
+	err = client.UpdateRegistry(ctx, update, found.ID)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
 	// } else {
 	// 	err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
 	// 	if err != nil {
@@ -96,28 +120,11 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	// Create or delete project
 	// Need logic to tell if deletion should be called
 
-	registeries, err := client.ListRegistries(ctx)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	type storeReg struct {
-		Registry *modelv2.Registry
-	}
-
-	var store = storeReg{}
-
-	for _, registery := range registeries {
-		if registery.Name == myRegistry.Name {
-			store.Registry = registery
-		}
-	}
-
 	myProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
 		Public:       harborConfiguration.Spec.ProjectReq.Public,
 		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
-		RegistryID:   &store.Registry.ID,
+		RegistryID:   &found.ID,
 	}
 
 	err = client.NewProject(ctx, myProject)
@@ -160,7 +167,7 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	err = client.NewReplicationPolicy(ctx,
-		store.Registry,
+		found,
 		reqDestinationRegistry,
 		harborConfiguration.Spec.Replication.ReplicateDeletion,
 		harborConfiguration.Spec.Replication.Override,
