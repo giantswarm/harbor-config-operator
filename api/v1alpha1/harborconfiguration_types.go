@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -84,21 +84,20 @@ type RegistryCredential struct {
 }
 
 type ProjectReq struct {
-	ProjectName     string                   `json:"projectName,omitempty"`
-	ProjectMetadata *modelv2.ProjectMetadata `json:"projectMetadata,omitempty"`
-	StorageLimit    *int64                   `json:"storage_limit,omitempty"`
-	RegistryID      *int64                   `json:"registry_id,omitempty"`
+	ProjectName  string `json:"projectName,omitempty"`
+	StorageLimit *int64 `json:"storageLimit,omitempty"`
+	Public       *bool  `json:"public,omitempty"`
 }
 
 type Replication struct {
-	Name                 string                       `json:"name,omitempty"`
-	DestinationNamespace string                       `json:"destinationNamespace,omitempty"`
-	Description          string                       `json:"description,omitempty"`
-	SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
-	DestinationRegistry  *modelv2.Registry            `json:"destinationRegistry,omitempty"`
-	EnablePolicy         bool                         `json:"enablePolicy,omitempty"`
-	ReplicateDeletion    bool                         `json:"replicateDeletion,omitempty"`
-	Override             bool                         `json:"override,omitempty"`
-	Filters              []*modelv2.ReplicationFilter `json:"filters,omitempty"`
-	Trigger              *modelv2.ReplicationTrigger  `json:"trigger,omitempty"`
+	Name                 string `json:"name,omitempty"`
+	DestinationNamespace string `json:"destinationNamespace,omitempty"`
+	Description          string `json:"description,omitempty"`
+	// SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
+	DestinationRegistry *apiextensions.JSON  `json:"destinationRegistry,omitempty"`
+	EnablePolicy        bool                 `json:"enablePolicy,omitempty"`
+	ReplicateDeletion   bool                 `json:"replicateDeletion,omitempty"`
+	Override            bool                 `json:"override,omitempty"`
+	Filters             []apiextensions.JSON `json:"filters,omitempty"`
+	Trigger             *apiextensions.JSON  `json:"trigger,omitempty"`
 }

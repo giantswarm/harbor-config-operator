@@ -1,0 +1,26 @@
+apiVersion: harbor-configuration.harbor.configuration/v1alpha1
+kind: HarborConfiguration
+metadata:
+  name: harborconfiguration
+spec:
+  harborTarget:
+    apiUrl: https://core.harbor.harbor-practice.co.uk/api/v2.0
+    username: admin
+    password: Harbor12345
+  registry:
+    name: crd-docker-registryy
+    type: docker-hub
+    targetRegistryUrl: https://hub.docker.com
+    description: Endpoint created via crd
+  projectReq:
+    projectName: test-project
+    storageLimit: -1
+    public: true
+  replication:
+    name: test-replication-rule
+    filters:
+    - type: name
+      value: library/nginx
+
+
+      

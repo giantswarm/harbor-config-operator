@@ -18,13 +18,13 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/giantswarm/harbor-config-operator/api/v1alpha1"
 	harborconfigurationv1alpha1 "github.com/giantswarm/harbor-config-operator/api/v1alpha1"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
@@ -52,7 +52,8 @@ type HarborConfigurationReconciler struct {
 func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 	// Need to add update function and have logic to tell reconiler what to do
-	var harborConfiguration v1alpha1.HarborConfiguration
+
+	var harborConfiguration harborconfigurationv1alpha1.HarborConfiguration
 
 	err := r.Get(ctx, req.NamespacedName, &harborConfiguration)
 	if err != nil {
@@ -79,25 +80,44 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	// Create or delete registry
 	// Need to update logic to tell if deletion should be called as all in same loop
 	// eg if i delete a registry it shouldnt also delete my projects
-	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
-		err = client.NewRegistry(ctx, myRegistry)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else {
-		err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
+
+	// if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
+	err = client.NewRegistry(ctx, myRegistry)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
+	// } else {
+	// 	err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+	// 	if err != nil {
+	// 		return ctrl.Result{}, err
+	// 	}
+	// }
 
 	// Create or delete project
 	// Need logic to tell if deletion should be called
+
+	registeries, err := client.ListRegistries(ctx)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	type storeReg struct {
+		Registry *modelv2.Registry
+	}
+
+	var store = storeReg{}
+
+	for _, registery := range registeries {
+		if registery.Name == myRegistry.Name {
+			store.Registry = registery
+		}
+	}
+
 	myProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
-		Metadata:     harborConfiguration.Spec.ProjectReq.ProjectMetadata,
+		Public:       harborConfiguration.Spec.ProjectReq.Public,
 		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
-		RegistryID:   harborConfiguration.Spec.ProjectReq.RegistryID,
+		RegistryID:   &store.Registry.ID,
 	}
 
 	err = client.NewProject(ctx, myProject)
@@ -105,20 +125,48 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	// err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 
 	// Create or delete a replication rule
+	reqFilters := make([]*modelv2.ReplicationFilter, 0)
+	for _, v := range harborConfiguration.Spec.Replication.Filters {
+		temp := modelv2.ReplicationFilter{}
+		err := json.Unmarshal(v.Raw, &temp)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		reqFilters = append(reqFilters, &temp)
+	}
+
+	// fixup for registry TODO IMRPOVE
+	var reqDestinationRegistry *modelv2.Registry
+	if harborConfiguration.Spec.Replication.DestinationRegistry != nil {
+		err = json.Unmarshal(harborConfiguration.Spec.Replication.DestinationRegistry.Raw, reqDestinationRegistry)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+	}
+	// fixup for trigger TODO IMRPOVE
+	var reqTrigger *modelv2.ReplicationTrigger
+	if harborConfiguration.Spec.Replication.Trigger != nil {
+		err = json.Unmarshal(harborConfiguration.Spec.Replication.Trigger.Raw, &reqTrigger)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	err = client.NewReplicationPolicy(ctx,
-		harborConfiguration.Spec.Replication.SourceRegistry,
-		harborConfiguration.Spec.Replication.DestinationRegistry,
+		store.Registry,
+		reqDestinationRegistry,
 		harborConfiguration.Spec.Replication.ReplicateDeletion,
 		harborConfiguration.Spec.Replication.Override,
 		harborConfiguration.Spec.Replication.EnablePolicy,
-		harborConfiguration.Spec.Replication.Filters,
-		harborConfiguration.Spec.Replication.Trigger,
+		reqFilters,
+		reqTrigger,
 		harborConfiguration.Spec.Replication.DestinationNamespace,
 		harborConfiguration.Spec.Replication.Description,
 		harborConfiguration.Spec.Replication.Name)
@@ -126,10 +174,10 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	// err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 
 	return ctrl.Result{}, nil
 }

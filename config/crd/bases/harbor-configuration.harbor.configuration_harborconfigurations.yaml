@@ -41,10 +41,16 @@ spec:
                     type: string
                   username:
                     type: string
-                required:
-                - apiUrl
-                - password
-                - username
+                type: object
+              projectReq:
+                properties:
+                  projectName:
+                    type: string
+                  public:
+                    type: boolean
+                  storageLimit:
+                    format: int64
+                    type: integer
                 type: object
               registry:
                 properties:
@@ -70,22 +76,42 @@ spec:
                     type: string
                   type:
                     type: string
-                required:
-                - name
-                - targetRegistryUrl
-                - type
                 type: object
-            required:
-            - harborTarget
-            - registry
+              replication:
+                properties:
+                  description:
+                    type: string
+                  destinationNamespace:
+                    type: string
+                  destinationRegistry:
+                    description: SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
+                    x-kubernetes-preserve-unknown-fields: true
+                  enablePolicy:
+                    type: boolean
+                  filters:
+                    items:
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  name:
+                    type: string
+                  override:
+                    type: boolean
+                  replicateDeletion:
+                    type: boolean
+                  trigger:
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
             type: object
           status:
             properties:
-              id:
+              projectId:
+                type: string
+              registryId:
                 format: int64
                 type: integer
-            required:
-            - id
+              replicationId:
+                format: int64
+                type: integer
             type: object
         type: object
     served: true
