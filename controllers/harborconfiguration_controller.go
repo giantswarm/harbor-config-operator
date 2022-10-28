@@ -108,30 +108,33 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 		return ctrl.Result{}, err
 	}
 
-	err = client.NewRegistry(ctx, &registry)
-	hErr := &harborerrors.ErrRegistryNameAlreadyExists{}
-	if err != nil && !errors.Is(err, hErr) {
+	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
+	hErr := &harborerrors.ErrRegistryNotFound{}
+
+	if err != nil && errors.Is(err, hErr) {
+		err = client.NewRegistry(ctx, &registry)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else if err == nil {
+		update := &modelv2.RegistryUpdate{
+			Name:        &harborConfiguration.Spec.Registry.Name,
+			URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
+			Description: &harborConfiguration.Spec.Registry.Description,
+		}
+		if harborConfiguration.Spec.Registry.Credential != nil {
+			update.AccessKey = &harborConfiguration.Spec.Registry.Credential.AccessKey
+			update.AccessSecret = &harborConfiguration.Spec.Registry.Credential.AccessSecret
+			update.CredentialType = &harborConfiguration.Spec.Registry.Credential.Type
+		}
+		err = client.UpdateRegistry(ctx, update, srcRegistry.ID)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
 		return ctrl.Result{}, err
 	}
 
-	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	update := &modelv2.RegistryUpdate{
-		Name:        &harborConfiguration.Spec.Registry.Name,
-		URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
-		Description: &harborConfiguration.Spec.Registry.Description,
-	}
-	if harborConfiguration.Spec.Registry.Credential != nil {
-		update.AccessKey = &harborConfiguration.Spec.Registry.Credential.AccessKey
-		update.AccessSecret = &harborConfiguration.Spec.Registry.Credential.AccessSecret
-		update.CredentialType = &harborConfiguration.Spec.Registry.Credential.Type
-	}
-	err = client.UpdateRegistry(ctx, update, srcRegistry.ID)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	return ctrl.Result{}, nil
 }
 
@@ -153,26 +156,29 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 		RegistryID:   &srcRegistry.ID,
 	}
 
-	err = client.NewProject(ctx, project)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	_, err = client.GetProject(ctx, project.ProjectName)
+	hErr := &harborerrors.ErrProjectNotFound{}
 
-	hErr := &harborerrors.ErrProjectNameAlreadyExists{}
-	if err != nil && !errors.Is(err, hErr) {
-		return ctrl.Result{}, err
+	if err != nil && errors.Is(err, hErr) {
+		err = client.NewProject(ctx, project)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else if err == nil {
+		// Probably dead code as you cant edit project in UI
+		update := &modelv2.Project{
+			Name:       harborConfiguration.Spec.ProjectReq.ProjectName,
+			RegistryID: srcRegistry.ID,
+		}
+		err = client.UpdateProject(ctx, update, project.StorageLimit)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
-
-	update := &modelv2.Project{
-		Name:       harborConfiguration.Spec.ProjectReq.ProjectName,
-		RegistryID: srcRegistry.ID,
-	}
-
-	err = client.UpdateProject(ctx, update, project.StorageLimit)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
 	return ctrl.Result{}, err
 }
 
@@ -214,46 +220,52 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		}
 	}
 
-	err = client.NewReplicationPolicy(ctx,
-		srcRegistry,
-		reqDestinationRegistry,
-		harborConfiguration.Spec.Replication.ReplicateDeletion,
-		harborConfiguration.Spec.Replication.Override,
-		harborConfiguration.Spec.Replication.EnablePolicy,
-		reqFilters,
-		reqTrigger,
-		harborConfiguration.Spec.Replication.DestinationNamespace,
-		harborConfiguration.Spec.Replication.Description,
-		harborConfiguration.Spec.Replication.Name)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
+	hErr := &harborerrors.ErrNotFound{}
 	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
 
-	if replicationFound.Name == harborConfiguration.Spec.Replication.Name && err != nil {
-		{
+	if err != nil && errors.Is(err, hErr) {
+		err = client.NewReplicationPolicy(ctx,
+			srcRegistry,
+			reqDestinationRegistry,
+			harborConfiguration.Spec.Replication.ReplicateDeletion,
+			harborConfiguration.Spec.Replication.Override,
+			harborConfiguration.Spec.Replication.EnablePolicy,
+			reqFilters,
+			reqTrigger,
+			harborConfiguration.Spec.Replication.DestinationNamespace,
+			harborConfiguration.Spec.Replication.Description,
+			harborConfiguration.Spec.Replication.Name)
+		if err != nil {
 			return ctrl.Result{}, err
 		}
-	}
+	} else if err == nil {
+		update := modelv2.ReplicationPolicy{
+			Name:          harborConfiguration.Spec.Replication.Name,
+			Description:   harborConfiguration.Spec.Replication.Description,
+			SrcRegistry:   srcRegistry,
+			DestNamespace: harborConfiguration.Spec.Replication.DestinationNamespace,
+			DestRegistry:  reqDestinationRegistry,
+			Filters:       reqFilters,
+			Trigger:       reqTrigger,
+			ID:            replicationFound.ID,
+			Override:      harborConfiguration.Spec.Replication.Override,
+			Enabled:       harborConfiguration.Spec.Replication.EnablePolicy,
+		}
 
-	update := modelv2.ReplicationPolicy{
-		Name:          harborConfiguration.Spec.Replication.Name,
-		Description:   harborConfiguration.Spec.Replication.Description,
-		SrcRegistry:   srcRegistry,
-		DestNamespace: harborConfiguration.Spec.Replication.DestinationNamespace,
-		DestRegistry:  reqDestinationRegistry,
-		Filters:       reqFilters,
-		Trigger:       reqTrigger,
-		ID:            replicationFound.ID,
-		Override:      harborConfiguration.Spec.Replication.Override,
-		Enabled:       harborConfiguration.Spec.Replication.EnablePolicy,
-	}
-
-	err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
-	if err != nil {
+		err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
 		return ctrl.Result{}, err
 	}
 
+	// trigger := &modelv2.StartReplicationExecution{
+	// 	PolicyID: replicationFound.ID,
+	// }
+	// err = client.TriggerReplicationExecution(ctx, trigger)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
 	return ctrl.Result{}, err
 }
