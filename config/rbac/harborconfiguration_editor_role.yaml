@@ -1,0 +1,24 @@
+# permissions for end users to edit harborconfigurations.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: harborconfiguration-editor-role
+rules:
+- apiGroups:
+  - harbor-configuration.harbor.configuration
+  resources:
+  - harborconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - harbor-configuration.harbor.configuration
+  resources:
+  - harborconfigurations/status
+  verbs:
+  - get
