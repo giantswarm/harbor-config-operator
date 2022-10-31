@@ -8,23 +8,20 @@ spec:
     username: admin
     password: Harbor12345
   registry:
-    name: crd-docker-registry
-    type: docker-hub
-    targetRegistryUrl: https://hub.docker.com
+    name: quay
+    type: quay
+    targetRegistryUrl: https://quay.io
     description: Endpoint created via crd
   projectReq:
-    projectName: test-project
+    projectName: quay-project
     storageLimit: -1
     public: true
   replication:
-    name: test-replication-rule-2
+    name: quay-replication
     enablePolicy: true
     override: true
     filters:
     - type: name
-      value: library/alpine
+      value: giantswarm/alpine
     trigger:
       type: manual
-      # type: scheduled
-      # trigger_settings:
-      #   cron: "* * * * * *"

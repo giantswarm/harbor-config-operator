@@ -66,8 +66,9 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
 		Description: harborConfiguration.Spec.Registry.Description,
 		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+		// CreationTime: strfmt.DateTime(time.Now()),
+		// UpdateTime:   strfmt.DateTime(time.Now()),
 	}
-
 	r.registryReconciliation(ctx, harborConfiguration, *registry)
 
 	r.projectReconciliation(ctx, harborConfiguration, *registry)
@@ -225,8 +226,8 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 
 	if err != nil && errors.Is(err, hErr) {
 		err = client.NewReplicationPolicy(ctx,
-			srcRegistry,
 			reqDestinationRegistry,
+			srcRegistry,
 			harborConfiguration.Spec.Replication.ReplicateDeletion,
 			harborConfiguration.Spec.Replication.Override,
 			harborConfiguration.Spec.Replication.EnablePolicy,
@@ -258,6 +259,11 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 			return ctrl.Result{}, err
 		}
 	} else {
+		return ctrl.Result{}, err
+	}
+
+	replicationFound, err = client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
