@@ -71,16 +71,20 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	dynamicClient := getKubeConfig()
-
+	dynamicClient, err := getKubeConfig()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	crdClient := dynamicClient.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	var harborTarget harborOperator.HarborCluster
-
-	getConcreteHarborType(ctx, crdClient, harborConfiguration, harborTarget)
+	harborTarget, err = getConcreteHarborType(ctx, crdClient, harborConfiguration, harborTarget)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, "admin", harborTarget.Spec.HarborAdminPasswordRef, nil)
 	if err != nil {
@@ -88,38 +92,16 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
-
-		registry := &modelv2.Registry{
-			Name:        harborConfiguration.Spec.Registry.Name,
-			Type:        harborConfiguration.Spec.Registry.Type,
-			URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
-			Description: harborConfiguration.Spec.Registry.Description,
-			Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+		_, err = r.reconcileAll(ctx, harborConfiguration, client)
+		if err != nil {
+			return ctrl.Result{}, err
 		}
-
-		r.registryReconciliation(ctx, harborConfiguration, *registry, client)
-
-		r.projectReconciliation(ctx, harborConfiguration, *registry, client)
-
-		r.replicationRuleReconciliation(ctx, harborConfiguration, *registry, client)
-
 	} else {
-		err := client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+		_, err = deleteAll(ctx, harborConfiguration, client)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 	}
-
 	return ctrl.Result{}, nil
 }
 
@@ -289,7 +271,7 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	return ctrl.Result{}, err
 }
 
-func getKubeConfig() dynamic.Interface {
+func getKubeConfig() (dynamic.Interface, error) {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf("error getting user home dir: %v\n", err)
@@ -310,7 +292,7 @@ func getKubeConfig() dynamic.Interface {
 		os.Exit(1)
 	}
 
-	return dynamicClient
+	return dynamicClient, err
 }
 
 func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterface, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, harborTarget harborOperator.HarborCluster) (harborOperator.HarborCluster, error) {
@@ -329,4 +311,48 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 		return harborTarget, err
 	}
 	return harborTarget, err
+}
+
+func (r *HarborConfigurationReconciler) reconcileAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	registry := &modelv2.Registry{
+		Name:        harborConfiguration.Spec.Registry.Name,
+		Type:        harborConfiguration.Spec.Registry.Type,
+		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
+		Description: harborConfiguration.Spec.Registry.Description,
+		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+	}
+
+	_, err := r.registryReconciliation(ctx, harborConfiguration, *registry, client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	_, err = r.projectReconciliation(ctx, harborConfiguration, *registry, client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	_, err = r.replicationRuleReconciliation(ctx, harborConfiguration, *registry, client)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, err
+}
+
+func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	err := client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, nil
 }
