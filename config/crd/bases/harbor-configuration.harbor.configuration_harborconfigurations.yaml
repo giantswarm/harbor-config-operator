@@ -35,15 +35,11 @@ spec:
             properties:
               harborTarget:
                 properties:
-                  apiUrl:
+                  harborUsername:
                     type: string
                   name:
                     type: string
                   namespace:
-                    type: string
-                  password:
-                    type: string
-                  username:
                     type: string
                 type: object
               projectReq:

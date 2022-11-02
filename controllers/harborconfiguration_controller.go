@@ -86,7 +86,7 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, "admin", harborTarget.Spec.HarborAdminPasswordRef, nil)
+	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, harborConfiguration.Spec.HarborTarget.HarborUsername, harborTarget.Spec.HarborAdminPasswordRef, nil)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

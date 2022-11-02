@@ -58,12 +58,9 @@ type HarborConfigurationList struct {
 }
 
 type HarborTarget struct {
-	Name      string `json:"name,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
-
-	ApiUrl   string `json:"apiUrl,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
+	Name           string `json:"name,omitempty"`
+	Namespace      string `json:"namespace,omitempty"`
+	HarborUsername string `json:"harborUsername,omitempty"`
 }
 
 type Registry struct {

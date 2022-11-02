@@ -6,6 +6,7 @@ spec:
   harborTarget:
     name: harborcluster-sample
     namespace: harbor-operator
+    harborUsername: admin
   registry:
     name: quay
     type: quay
