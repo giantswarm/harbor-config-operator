@@ -5,7 +5,7 @@ metadata:
 spec:
   harborTarget:
     name: harborcluster-sample
-    namespace: container-solutions
+    namespace: harbor-operator
   registry:
     name: quay
     type: quay

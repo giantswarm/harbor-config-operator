@@ -33,7 +33,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	dynamic "k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,8 +42,8 @@ import (
 
 var (
 	harborClusterGVM = schema.GroupVersionResource{
-		Group:    "harborclusters.goharbor.io",
-		Version:  "v1beta1",
+		Group:    "goharbor.io",
+		Version:  "v1alpha3",
 		Resource: "harborclusters",
 	}
 )
@@ -83,11 +83,6 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	var harborTarget harborOperator.HarborCluster
 
-	// nameSpaced := types.NamespacedName{
-	// 	Name:      harborConfiguration.Spec.HarborTarget.Name,
-	// 	Namespace: harborConfiguration.Spec.HarborTarget.Namespace,
-	// }
-
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf("error getting user home dir: %v\n", err)
@@ -113,46 +108,25 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	// options := v1.GetOptions{
-	// 	TypeMeta: v1.TypeMeta{
-	// 		Kind:       "HarborCluster",
-	// 		APIVersion: "v1beta1",
-	// 	},
-	// }
-	println(harborConfiguration.Spec.HarborTarget.Name)
-	harbor, err := crdClient.Get(ctx, harborConfiguration.Spec.HarborTarget.Name, v1.GetOptions{
+	harborUnstructured, err := crdClient.Get(ctx, harborConfiguration.Spec.HarborTarget.Name, v1.GetOptions{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "HarborCluster",
-			APIVersion: "v1beta1",
+			APIVersion: "v1alpha3",
 		},
 	})
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// harbor, err := crdClient.List(ctx, v1.ListOptions{})
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	println(harbor)
-	// crdClient.Get(ctx, nameSpaced, &harborTarget)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	// url := harborTarget.Spec.ExternalURL
-	// fmt.Println(url)
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(harborUnstructured.UnstructuredContent(), &harborTarget)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, "admin", harborTarget.Spec.HarborAdminPasswordRef, nil)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-
-	// client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
 
 	registry := &modelv2.Registry{
 		Name:        harborConfiguration.Spec.Registry.Name,
@@ -332,7 +306,7 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		}
 
 		err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
-		// Experienced some flaky
+		// Experienced some flakiness
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -354,27 +328,3 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	}
 	return ctrl.Result{}, err
 }
-
-// func newClient() (dynamic.Interface, error) {
-// 	config, err := rest.InClusterConfig()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	dynClient, err := dynamic.NewForConfig(config)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return dynClient, nil
-// }
-
-// func GetHarborCluster(ctx context.Context, client dynamic.Interface, namespace string, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration) ([]unstructured.Unstructured, error) {
-// 	// GET /apis/mongodbcommunity.mongodb.com/v1/namespaces/{namespace}/mongodbcommunity/
-// 	list, err := client.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace).Get(ctx, "harborclusters", nil, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return list.Items, nil
-// }
