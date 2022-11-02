@@ -62,102 +62,63 @@ type HarborConfigurationReconciler struct {
 //+kubebuilder:rbac:groups=harborclusters.goharbor.io,resources=harborclusters/status,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=harborclusters.goharbor.io,resources=harborclusters/finalizers,verbs=get;list;watch;create;update;patch;delete
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the HarborConfiguration object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
 	var harborConfiguration harborconfigurationv1alpha1.HarborConfiguration
-
 	err := r.Get(ctx, req.NamespacedName, &harborConfiguration)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	var harborTarget harborOperator.HarborCluster
-
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("error getting user home dir: %v\n", err)
-		os.Exit(1)
-	}
-	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
-	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
-
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	if err != nil {
-		fmt.Printf("error getting Kubernetes config: %v\n", err)
-		os.Exit(1)
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
-	if err != nil {
-		fmt.Printf("error creating dynamic client: %v\n", err)
-		os.Exit(1)
-	}
+	dynamicClient := getKubeConfig()
 
 	crdClient := dynamicClient.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	harborUnstructured, err := crdClient.Get(ctx, harborConfiguration.Spec.HarborTarget.Name, v1.GetOptions{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "HarborCluster",
-			APIVersion: "v1alpha3",
-		},
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	var harborTarget harborOperator.HarborCluster
 
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(harborUnstructured.UnstructuredContent(), &harborTarget)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	getConcreteHarborType(ctx, crdClient, harborConfiguration, harborTarget)
 
 	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, "admin", harborTarget.Spec.HarborAdminPasswordRef, nil)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	registry := &modelv2.Registry{
-		Name:        harborConfiguration.Spec.Registry.Name,
-		Type:        harborConfiguration.Spec.Registry.Type,
-		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
-		Description: harborConfiguration.Spec.Registry.Description,
-		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
+
+		registry := &modelv2.Registry{
+			Name:        harborConfiguration.Spec.Registry.Name,
+			Type:        harborConfiguration.Spec.Registry.Type,
+			URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
+			Description: harborConfiguration.Spec.Registry.Description,
+			Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
+		}
+
+		r.registryReconciliation(ctx, harborConfiguration, *registry, client)
+
+		r.projectReconciliation(ctx, harborConfiguration, *registry, client)
+
+		r.replicationRuleReconciliation(ctx, harborConfiguration, *registry, client)
+
+	} else {
+		err := client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
-	r.registryReconciliation(ctx, harborConfiguration, *registry, client)
-
-	r.projectReconciliation(ctx, harborConfiguration, *registry, client)
-
-	r.replicationRuleReconciliation(ctx, harborConfiguration, *registry, client)
-
-	// if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
-	// } else {
-	// 	err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
-	// 	if err != nil {
-	// 		return ctrl.Result{}, err
-	// 	}
-	// }
-
-	// err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
-
-	// err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
-	// if err != nil {
-	// 	return ctrl.Result{}, err
-	// }
 
 	return ctrl.Result{}, nil
 }
@@ -201,7 +162,6 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 }
 
 func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-
 	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -327,4 +287,46 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, err
+}
+
+func getKubeConfig() dynamic.Interface {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error getting user home dir: %v\n", err)
+		os.Exit(1)
+	}
+	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
+	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		fmt.Printf("error getting Kubernetes config: %v\n", err)
+		os.Exit(1)
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
+	if err != nil {
+		fmt.Printf("error creating dynamic client: %v\n", err)
+		os.Exit(1)
+	}
+
+	return dynamicClient
+}
+
+func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterface, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, harborTarget harborOperator.HarborCluster) (harborOperator.HarborCluster, error) {
+	harborUnstructured, err := crdClient.Get(ctx, harborConfiguration.Spec.HarborTarget.Name, v1.GetOptions{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "HarborCluster",
+			APIVersion: "v1alpha3",
+		},
+	})
+	if err != nil {
+		return harborTarget, err
+	}
+
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(harborUnstructured.UnstructuredContent(), &harborTarget)
+	if err != nil {
+		return harborTarget, err
+	}
+	return harborTarget, err
 }
