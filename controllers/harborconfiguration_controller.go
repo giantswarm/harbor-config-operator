@@ -96,6 +96,11 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+
+		_, err = triggerReplication(ctx, harborConfiguration, client)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	} else {
 		_, err = deleteAll(ctx, harborConfiguration, client)
 		if err != nil {
@@ -255,19 +260,6 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	} else {
 		return ctrl.Result{}, err
 	}
-
-	replicationFound, err = client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	trigger := &modelv2.StartReplicationExecution{
-		PolicyID: replicationFound.ID,
-	}
-	err = client.TriggerReplicationExecution(ctx, trigger)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	return ctrl.Result{}, err
 }
 
@@ -355,4 +347,20 @@ func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alp
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{}, nil
+}
+
+func triggerReplication(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	trigger := &modelv2.StartReplicationExecution{
+		PolicyID: replicationFound.ID,
+	}
+	err = client.TriggerReplicationExecution(ctx, trigger)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{}, err
 }
