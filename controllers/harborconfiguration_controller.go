@@ -20,26 +20,47 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 
 	harborconfigurationv1alpha1 "github.com/giantswarm/harbor-config-operator/api/v1alpha1"
+	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
+	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 	harborerrors "github.com/mittwald/goharbor-client/v5/apiv2/pkg/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	dynamic "k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+var (
+	harborClusterGVM = schema.GroupVersionResource{
+		Group:    "harborclusters.goharbor.io",
+		Version:  "v1beta1",
+		Resource: "harborclusters",
+	}
+)
+
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
 type HarborConfigurationReconciler struct {
+	DClient *k8s.DynamicClientWrapper
 	client.Client
-	Scheme *runtime.Scheme
+	*runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations/finalizers,verbs=update
+//+kubebuilder:rbac:groups=harborclusters.goharbor.io,resources=harborclusters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=harborclusters.goharbor.io,resources=harborclusters/status,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=harborclusters.goharbor.io,resources=harborclusters/finalizers,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -60,20 +81,91 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
+	var harborTarget harborOperator.HarborCluster
+
+	// nameSpaced := types.NamespacedName{
+	// 	Name:      harborConfiguration.Spec.HarborTarget.Name,
+	// 	Namespace: harborConfiguration.Spec.HarborTarget.Namespace,
+	// }
+
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error getting user home dir: %v\n", err)
+		os.Exit(1)
+	}
+	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
+	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		fmt.Printf("error getting Kubernetes config: %v\n", err)
+		os.Exit(1)
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
+	if err != nil {
+		fmt.Printf("error creating dynamic client: %v\n", err)
+		os.Exit(1)
+	}
+
+	crdClient := dynamicClient.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// options := v1.GetOptions{
+	// 	TypeMeta: v1.TypeMeta{
+	// 		Kind:       "HarborCluster",
+	// 		APIVersion: "v1beta1",
+	// 	},
+	// }
+	println(harborConfiguration.Spec.HarborTarget.Name)
+	harbor, err := crdClient.Get(ctx, harborConfiguration.Spec.HarborTarget.Name, v1.GetOptions{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "HarborCluster",
+			APIVersion: "v1beta1",
+		},
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// harbor, err := crdClient.List(ctx, v1.ListOptions{})
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
+
+	println(harbor)
+	// crdClient.Get(ctx, nameSpaced, &harborTarget)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
+
+	// url := harborTarget.Spec.ExternalURL
+	// fmt.Println(url)
+
+	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, "admin", harborTarget.Spec.HarborAdminPasswordRef, nil)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
+	// if err != nil {
+	// 	return ctrl.Result{}, err
+	// }
+
 	registry := &modelv2.Registry{
 		Name:        harborConfiguration.Spec.Registry.Name,
 		Type:        harborConfiguration.Spec.Registry.Type,
 		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
 		Description: harborConfiguration.Spec.Registry.Description,
 		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
-		// CreationTime: strfmt.DateTime(time.Now()),
-		// UpdateTime:   strfmt.DateTime(time.Now()),
 	}
-	r.registryReconciliation(ctx, harborConfiguration, *registry)
+	r.registryReconciliation(ctx, harborConfiguration, *registry, client)
 
-	r.projectReconciliation(ctx, harborConfiguration, *registry)
+	r.projectReconciliation(ctx, harborConfiguration, *registry, client)
 
-	r.replicationRuleReconciliation(ctx, harborConfiguration, *registry)
+	r.replicationRuleReconciliation(ctx, harborConfiguration, *registry, client)
 
 	// if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
 	// } else {
@@ -103,12 +195,7 @@ func (r *HarborConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error
 		Complete(r)
 }
 
-func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry) (ctrl.Result, error) {
-	client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
+func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
 	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
 	hErr := &harborerrors.ErrRegistryNotFound{}
 
@@ -139,11 +226,7 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 	return ctrl.Result{}, nil
 }
 
-func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry) (ctrl.Result, error) {
-	client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
 
 	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
 	if err != nil {
@@ -183,12 +266,7 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 	return ctrl.Result{}, err
 }
 
-func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry) (ctrl.Result, error) {
-	client, err := apiv2.NewRESTClientForHost(harborConfiguration.Spec.HarborTarget.ApiUrl, harborConfiguration.Spec.HarborTarget.Username, harborConfiguration.Spec.HarborTarget.Password, nil)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
+func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
 	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -276,3 +354,27 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	}
 	return ctrl.Result{}, err
 }
+
+// func newClient() (dynamic.Interface, error) {
+// 	config, err := rest.InClusterConfig()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	dynClient, err := dynamic.NewForConfig(config)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return dynClient, nil
+// }
+
+// func GetHarborCluster(ctx context.Context, client dynamic.Interface, namespace string, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration) ([]unstructured.Unstructured, error) {
+// 	// GET /apis/mongodbcommunity.mongodb.com/v1/namespaces/{namespace}/mongodbcommunity/
+// 	list, err := client.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace).Get(ctx, "harborclusters", nil, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return list.Items, nil
+// }

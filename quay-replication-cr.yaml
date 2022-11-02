@@ -4,9 +4,8 @@ metadata:
   name: harborconfiguration
 spec:
   harborTarget:
-    apiUrl: https://core.harbor.harbor-practice.co.uk/api/v2.0
-    username: admin
-    password: Harbor12345
+    name: harborcluster-sample
+    namespace: container-solutions
   registry:
     name: quay
     type: quay
@@ -20,6 +19,7 @@ spec:
     name: quay-replication
     enablePolicy: true
     override: true
+    destinationNamespace: quay-project
     filters:
     - type: name
       value: giantswarm/alpine

@@ -31,3 +31,39 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - harborclusters.goharbor.io
+  resources:
+  - harborclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - harborclusters.goharbor.io
+  resources:
+  - harborclusters/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - harborclusters.goharbor.io
+  resources:
+  - harborclusters/status
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

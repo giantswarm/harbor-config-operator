@@ -37,6 +37,10 @@ spec:
                 properties:
                   apiUrl:
                     type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
                   password:
                     type: string
                   username:
@@ -84,7 +88,6 @@ spec:
                   destinationNamespace:
                     type: string
                   destinationRegistry:
-                    description: SourceRegistry       *modelv2.Registry            `json:"sourceRegistry,omitempty"`
                     x-kubernetes-preserve-unknown-fields: true
                   enablePolicy:
                     type: boolean
