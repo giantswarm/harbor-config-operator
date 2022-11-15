@@ -142,8 +142,8 @@ func (in *ProjectReq) DeepCopyInto(out *ProjectReq) {
 		*out = new(int64)
 		**out = **in
 	}
-	if in.Public != nil {
-		in, out := &in.Public, &out.Public
+	if in.IsPublic != nil {
+		in, out := &in.IsPublic, &out.IsPublic
 		*out = new(bool)
 		**out = **in
 	}

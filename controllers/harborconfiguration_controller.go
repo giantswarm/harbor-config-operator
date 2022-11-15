@@ -156,7 +156,7 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 
 	project := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
-		Public:       harborConfiguration.Spec.ProjectReq.Public,
+		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
 		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
 		RegistryID:   &srcRegistry.ID,
 	}
@@ -188,7 +188,7 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 }
 
 func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

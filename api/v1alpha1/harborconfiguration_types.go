@@ -86,11 +86,12 @@ type RegistryCredential struct {
 type ProjectReq struct {
 	ProjectName  string `json:"projectName,omitempty"`
 	StorageLimit *int64 `json:"storageLimit,omitempty"`
-	Public       *bool  `json:"public,omitempty"`
+	IsPublic     *bool  `json:"isPublic,omitempty"`
 }
 
 type Replication struct {
 	Name                 string               `json:"name,omitempty"`
+	RegistryName         string               `json:"registryName,omitempty"`
 	DestinationNamespace string               `json:"destinationNamespace,omitempty"`
 	Description          string               `json:"description,omitempty"`
 	DestinationRegistry  *apiextensions.JSON  `json:"destinationRegistry,omitempty"`
