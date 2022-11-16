@@ -118,7 +118,7 @@ func (r *HarborConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error
 }
 
 func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
 	hErr := &harborerrors.ErrRegistryNotFound{}
 
 	if err != nil && errors.Is(err, hErr) {
@@ -149,7 +149,7 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 }
 
 func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, registry.Name)
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
