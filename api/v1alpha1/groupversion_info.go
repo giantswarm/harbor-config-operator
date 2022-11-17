@@ -1,4 +1,4 @@
-/*
+:/*
 Copyright 2022.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the harbor-configuration v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=harbor-configuration.harbor.configuration
+// +kubebuilder:object:generate=true
+// +groupName=harbor-configuration.harbor.configuration
 package v1alpha1
 
 import (
