@@ -34,6 +34,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,10 +73,11 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	dynamicClient, err := getKubeConfig()
+	dynamicClient, err := getDynamicKubeConfig()
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
 	crdClient := dynamicClient.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -86,7 +89,30 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	client, err := apiv2.NewRESTClientForHost(harborTarget.Spec.ExternalURL, harborConfiguration.Spec.HarborTarget.HarborUsername, harborTarget.Spec.HarborAdminPasswordRef, nil)
+	typedConfig, err := getTypedKubeConfig()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	clientSet, err := kubernetes.NewForConfig(typedConfig)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	passwordSecret, err := clientSet.CoreV1().Secrets(harborTarget.Namespace).Get(ctx, harborTarget.Spec.HarborAdminPasswordRef, v1.GetOptions{})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Not currently working, swap this out for local DNS
+	harborCoreSvc, err := clientSet.CoreV1().Services(harborTarget.Namespace).Get(ctx, "harbor-cluster-harbor-harbor-core", v1.GetOptions{})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	print(harborCoreSvc.Spec.ClusterIP)
+
+	client, err := apiv2.NewRESTClientForHost(string(harborCoreSvc.Spec.ClusterIP)+"/api/v2.0", harborConfiguration.Spec.HarborTarget.HarborUsername, string(passwordSecret.Data["secret"]), nil)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -263,7 +289,25 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	return ctrl.Result{}, err
 }
 
-func getKubeConfig() (dynamic.Interface, error) {
+func getTypedKubeConfig() (*rest.Config, error) {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error getting user home dir: %v\n", err)
+		os.Exit(1)
+	}
+	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
+	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		fmt.Printf("error getting Kubernetes config: %v\n", err)
+		os.Exit(1)
+	}
+
+	return kubeConfig, err
+}
+
+func getDynamicKubeConfig() (dynamic.Interface, error) {
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		fmt.Printf("error getting user home dir: %v\n", err)

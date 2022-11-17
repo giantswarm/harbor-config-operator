@@ -1,11 +1,11 @@
 apiVersion: harbor-configuration.harbor.configuration/v1alpha1
 kind: HarborConfiguration
 metadata:
-  name: harborconfiguration
+  name: harborconfiguration-quay
 spec:
   harborTarget:
-    name: harborcluster-sample
-    namespace: harbor-operator
+    name: harbor-cluster
+    namespace: container-solutions
     harborUsername: admin
   registry:
     name: quay
@@ -15,9 +15,10 @@ spec:
   projectReq:
     projectName: quay-project
     storageLimit: -1
-    public: true
+    isPublic: true
   replication:
     name: quay-replication
+    registryName: quay
     enablePolicy: true
     override: true
     destinationNamespace: quay-project

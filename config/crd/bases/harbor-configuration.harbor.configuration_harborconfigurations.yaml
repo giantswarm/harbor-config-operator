@@ -44,10 +44,10 @@ spec:
                 type: object
               projectReq:
                 properties:
+                  isPublic:
+                    type: boolean
                   projectName:
                     type: string
-                  public:
-                    type: boolean
                   storageLimit:
                     format: int64
                     type: integer
@@ -95,6 +95,8 @@ spec:
                     type: string
                   override:
                     type: boolean
+                  registryName:
+                    type: string
                   replicateDeletion:
                     type: boolean
                   trigger:
