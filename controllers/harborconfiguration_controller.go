@@ -33,7 +33,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -318,7 +320,10 @@ func getTypedKubeConfig() (*kubernetes.Clientset, error) {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		config, err = getkubeConfig()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	kubeConfig, err := kubernetes.NewForConfig(config)
@@ -331,7 +336,10 @@ func getDynamicKubeConfig() (dynamic.Interface, error) {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		config, err = getkubeConfig()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -341,6 +349,24 @@ func getDynamicKubeConfig() (dynamic.Interface, error) {
 	}
 
 	return dynamicClient, err
+}
+
+func getkubeConfig() (*rest.Config, error) {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error getting user home dir: %v\n", err)
+		os.Exit(1)
+	}
+	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
+	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		fmt.Printf("error getting Kubernetes config: %v\n", err)
+		os.Exit(1)
+	}
+
+	return kubeConfig, err
 }
 
 func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterface, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, harborTarget harborOperator.HarborCluster) (harborOperator.HarborCluster, error) {
