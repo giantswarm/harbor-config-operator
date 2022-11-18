@@ -260,7 +260,6 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 			DestRegistry:  reqDestinationRegistry,
 			Filters:       reqFilters,
 			Trigger:       reqTrigger,
-			ID:            replicationFound.ID,
 			Override:      harborConfiguration.Spec.Replication.Override,
 			Enabled:       harborConfiguration.Spec.Replication.EnablePolicy,
 		}

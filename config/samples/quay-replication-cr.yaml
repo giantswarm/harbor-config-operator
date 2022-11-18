@@ -1,11 +1,11 @@
 apiVersion: harbor-configuration.harbor.configuration/v1alpha1
 kind: HarborConfiguration
 metadata:
-  name: harborconfiguration-quay
+  name: harborconfiguration
 spec:
   harborTarget:
-    name: harbor-cluster
-    namespace: container-solutions
+    name: harborcluster
+    namespace: harbor-cluster
     harborUsername: admin
   registry:
     name: quay
