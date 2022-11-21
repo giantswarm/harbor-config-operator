@@ -176,30 +176,35 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 		RegistryID:   &srcRegistry.ID,
 	}
 
-	_, err = client.GetProject(ctx, project.ProjectName)
-	hErr := &harborerrors.ErrProjectNotFound{}
-
-	if err != nil && errors.Is(err, hErr) {
-		err = client.NewProject(ctx, project)
+	err = client.NewProject(ctx, project)
+	if errors.Is(err, &harborerrors.ErrProjectNameAlreadyExists{}) {
+		harborProject, err := client.GetProject(ctx, project.ProjectName)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-	} else if err == nil {
-		// Probably dead code as you cant edit project in UI
 		update := &modelv2.Project{
 			Name:       harborConfiguration.Spec.ProjectReq.ProjectName,
 			RegistryID: srcRegistry.ID,
+			ProjectID:  harborProject.ProjectID,
 		}
-		err = client.UpdateProject(ctx, update, project.StorageLimit)
-		if err != nil {
-			return ctrl.Result{}, err
+		// Note: Only positive values of storageLimit are supported through this method.
+		// Use the 'UpdateStorageQuotaByProjectID' method when `project.StorageLimit`is `-1`
+		unlimitedStorage := int64(-1)
+		if project.StorageLimit != &unlimitedStorage {
+			err = client.UpdateProject(ctx, update, project.StorageLimit)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		} else {
+			err = client.UpdateStorageQuotaByProjectID(ctx, int64(update.ProjectID), unlimitedStorage)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	} else {
-		if err != nil {
-			return ctrl.Result{}, err
-		}
+		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil
 }
 
 func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
