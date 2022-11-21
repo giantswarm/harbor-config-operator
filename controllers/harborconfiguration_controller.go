@@ -309,7 +309,13 @@ func getHarborSecret(ctx context.Context, clientSet *kubernetes.Clientset, harbo
 	if err != nil {
 		return "", err
 	}
-	return string(passwordSecret.Data["secret"]), nil
+	passwords := passwordSecret.Data
+	for key, value := range passwords {
+		if key == "secret" && string(value) != "" {
+			return string(value), nil
+		}
+	}
+	return "", errors.New("no key \"secret\" found")
 }
 
 func getHarborURL(harborcluster *harborOperator.HarborCluster) string {
