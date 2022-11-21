@@ -49,6 +49,11 @@ var (
 		Version:  "v1alpha3",
 		Resource: "harborclusters",
 	}
+
+	RegistryNotFoundError        = &harborerrors.ErrRegistryNotFound{}
+	ProjectNotFoundError         = &harborerrors.ErrProjectNotFound{}
+	ProjectNameAlreadyExistError = &harborerrors.ErrProjectNameAlreadyExists{}
+	NotFoundError                = &harborerrors.ErrNotFound{}
 )
 
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
@@ -134,9 +139,8 @@ func (r *HarborConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error
 
 func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
 	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
-	hErr := &harborerrors.ErrRegistryNotFound{}
 
-	if err != nil && errors.Is(err, hErr) {
+	if err != nil && errors.Is(err, RegistryNotFoundError) {
 		err = client.NewRegistry(ctx, &registry)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -240,10 +244,9 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		}
 	}
 
-	hErr := &harborerrors.ErrNotFound{}
 	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
 
-	if err != nil && errors.Is(err, hErr) {
+	if err != nil && errors.Is(err, NotFoundError) {
 		err = client.NewReplicationPolicy(ctx,
 			reqDestinationRegistry,
 			srcRegistry,
