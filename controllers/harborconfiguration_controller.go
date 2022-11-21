@@ -26,6 +26,7 @@ import (
 
 	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
 	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
+	rep "github.com/mittwald/goharbor-client/v5/apiv1/replication"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
 	harborerrors "github.com/mittwald/goharbor-client/v5/apiv2/pkg/errors"
@@ -49,12 +50,6 @@ var (
 		Version:  "v1alpha3",
 		Resource: "harborclusters",
 	}
-
-	RegistryNotFoundError         = &harborerrors.ErrRegistryNotFound{}
-	RegistryNameAlreadyExistError = &harborerrors.ErrRegistryNameAlreadyExists{}
-	ProjectNotFoundError          = &harborerrors.ErrProjectNotFound{}
-	ProjectNameAlreadyExistError  = &harborerrors.ErrProjectNameAlreadyExists{}
-	NotFoundError                 = &harborerrors.ErrNotFound{}
 )
 
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
@@ -140,7 +135,7 @@ func (r *HarborConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error
 
 func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
 	err := client.NewRegistry(ctx, &registry)
-	if errors.Is(err, RegistryNameAlreadyExistError) {
+	if errors.Is(err, &harborerrors.ErrRegistryNameAlreadyExists{}) {
 		update := &modelv2.RegistryUpdate{
 			Name:        &harborConfiguration.Spec.Registry.Name,
 			URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
@@ -181,7 +176,7 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 	}
 
 	err = client.NewProject(ctx, requestedProject)
-	if errors.Is(err, ProjectNameAlreadyExistError) {
+	if errors.Is(err, &harborerrors.ErrProjectNameAlreadyExists{}) {
 		existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -244,24 +239,19 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		}
 	}
 
-	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
+	err = client.NewReplicationPolicy(ctx,
+		reqDestinationRegistry,
+		srcRegistry,
+		harborConfiguration.Spec.Replication.ReplicateDeletion,
+		harborConfiguration.Spec.Replication.Override,
+		harborConfiguration.Spec.Replication.EnablePolicy,
+		reqFilters,
+		reqTrigger,
+		harborConfiguration.Spec.Replication.DestinationNamespace,
+		harborConfiguration.Spec.Replication.Description,
+		harborConfiguration.Spec.Replication.Name)
 
-	if err != nil && errors.Is(err, NotFoundError) {
-		err = client.NewReplicationPolicy(ctx,
-			reqDestinationRegistry,
-			srcRegistry,
-			harborConfiguration.Spec.Replication.ReplicateDeletion,
-			harborConfiguration.Spec.Replication.Override,
-			harborConfiguration.Spec.Replication.EnablePolicy,
-			reqFilters,
-			reqTrigger,
-			harborConfiguration.Spec.Replication.DestinationNamespace,
-			harborConfiguration.Spec.Replication.Description,
-			harborConfiguration.Spec.Replication.Name)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else if err == nil {
+	if errors.Is(err, &rep.ErrReplicationNameAlreadyExists{}) {
 		update := modelv2.ReplicationPolicy{
 			Name:          harborConfiguration.Spec.Replication.Name,
 			Description:   harborConfiguration.Spec.Replication.Description,
@@ -274,15 +264,18 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 			Enabled:       harborConfiguration.Spec.Replication.EnablePolicy,
 		}
 
+		replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 		err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
-		// Experienced some flakiness
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil
 }
 
 func (r *HarborConfigurationReconciler) reconcileAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
