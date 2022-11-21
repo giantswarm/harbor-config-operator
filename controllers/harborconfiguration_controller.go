@@ -173,34 +173,34 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 		return ctrl.Result{}, err
 	}
 
-	project := &modelv2.ProjectReq{
+	requestedProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
 		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
 		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
 		RegistryID:   &srcRegistry.ID,
 	}
 
-	err = client.NewProject(ctx, project)
-	if errors.Is(err, &harborerrors.ErrProjectNameAlreadyExists{}) {
-		harborProject, err := client.GetProject(ctx, project.ProjectName)
+	err = client.NewProject(ctx, requestedProject)
+	if errors.Is(err, ProjectNameAlreadyExistError) {
+		existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		update := &modelv2.Project{
+		updatedProject := &modelv2.Project{
 			Name:       harborConfiguration.Spec.ProjectReq.ProjectName,
 			RegistryID: srcRegistry.ID,
-			ProjectID:  harborProject.ProjectID,
+			ProjectID:  existingProject.ProjectID,
 		}
 		// Note: Only positive values of storageLimit are supported through this method.
 		// Use the 'UpdateStorageQuotaByProjectID' method when `project.StorageLimit`is `-1`
 		unlimitedStorage := int64(-1)
-		if project.StorageLimit != &unlimitedStorage {
-			err = client.UpdateProject(ctx, update, project.StorageLimit)
+		if requestedProject.StorageLimit != &unlimitedStorage {
+			err = client.UpdateProject(ctx, updatedProject, requestedProject.StorageLimit)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
 		} else {
-			err = client.UpdateStorageQuotaByProjectID(ctx, int64(update.ProjectID), unlimitedStorage)
+			err = client.UpdateStorageQuotaByProjectID(ctx, int64(updatedProject.ProjectID), unlimitedStorage)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
