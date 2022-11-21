@@ -18,15 +18,23 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	util "k8s.io/client-go/util/homedir"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -79,8 +87,10 @@ func main() {
 	}
 
 	if err = (&controllers.HarborConfigurationReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		ClientSet:  getTypedKubeConfig(),
+		DynamicSet: getDynamicKubeConfig(),
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "HarborConfiguration")
 		os.Exit(1)
@@ -101,4 +111,61 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getDynamicKubeConfig() dynamic.Interface {
+	var config *rest.Config
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		config = getkubeConfig()
+		if config == nil {
+			setupLog.Error(err, "could not get dynamic configuration")
+			os.Exit(1)
+		}
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		fmt.Printf("error creating dynamic client: %v\n", err)
+		os.Exit(1)
+	}
+
+	return dynamicClient
+}
+
+func getTypedKubeConfig() *kubernetes.Clientset {
+	var config *rest.Config
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		config = getkubeConfig()
+		if config == nil {
+			setupLog.Error(err, "could not get typed configuration")
+			os.Exit(1)
+		}
+	}
+
+	kubeConfig, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		setupLog.Error(err, "could not get typed configuration")
+		os.Exit(1)
+	}
+
+	return kubeConfig
+}
+
+func getkubeConfig() *rest.Config {
+	userHomeDir := util.HomeDir()
+
+	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
+	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
+
+	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+	if err != nil {
+		fmt.Printf("error getting Kubernetes config: %v\n", err)
+		os.Exit(1)
+	}
+
+	return kubeConfig
 }

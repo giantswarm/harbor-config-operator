@@ -21,23 +21,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
 	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
-	rep "github.com/mittwald/goharbor-client/v5/apiv1/replication"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
+	replication "github.com/mittwald/goharbor-client/v5/apiv2/pkg/clients/replication"
 	harborerrors "github.com/mittwald/goharbor-client/v5/apiv2/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	util "k8s.io/client-go/util/homedir"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -58,6 +53,8 @@ type HarborConfigurationReconciler struct {
 	DClient *k8s.DynamicClientWrapper
 	client.Client
 	*runtime.Scheme
+	ClientSet  *kubernetes.Clientset
+	DynamicSet dynamic.Interface
 }
 
 //+kubebuilder:rbac:groups=administration.harbor.configuration,resources=harborconfigurations,verbs=get;list;watch;create;update;patch;delete
@@ -77,28 +74,18 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
-	dynamicClient, err := getDynamicKubeConfig()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	crdClient := dynamicClient.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
+	requestResource := r.DynamicSet.Resource(harborClusterGVM).Namespace(harborConfiguration.Spec.HarborTarget.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	var harborTarget harborOperator.HarborCluster
-	harborTarget, err = getConcreteHarborType(ctx, crdClient, harborConfiguration, harborTarget)
+	harborTarget, err = getConcreteHarborType(ctx, requestResource, harborConfiguration, harborTarget)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	clientSet, err := getTypedKubeConfig()
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	haborSecret, err := getHarborSecret(ctx, clientSet, &harborTarget)
+	haborSecret, err := getHarborSecret(ctx, r.ClientSet, &harborTarget)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -252,7 +239,7 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		harborConfiguration.Spec.Replication.Description,
 		harborConfiguration.Spec.Replication.Name)
 
-	if errors.Is(err, &rep.ErrReplicationNameAlreadyExists{}) {
+	if errors.Is(err, &replication.ErrReplicationNameAlreadyExists{}) {
 		update := modelv2.ReplicationPolicy{
 			Name:          harborConfiguration.Spec.Replication.Name,
 			Description:   harborConfiguration.Spec.Replication.Description,
@@ -322,57 +309,6 @@ func getHarborSecret(ctx context.Context, clientSet *kubernetes.Clientset, harbo
 func getHarborURL(harborcluster *harborOperator.HarborCluster) string {
 	url := fmt.Sprintf("http://%s-harbor-harbor-core.%s/api/v2.0", harborcluster.Name, harborcluster.Namespace)
 	return url
-}
-
-func getTypedKubeConfig() (*kubernetes.Clientset, error) {
-	var config *rest.Config
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		config, err = getkubeConfig()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	kubeConfig, err := kubernetes.NewForConfig(config)
-
-	return kubeConfig, err
-}
-
-func getDynamicKubeConfig() (dynamic.Interface, error) {
-	var config *rest.Config
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		config, err = getkubeConfig()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		fmt.Printf("error creating dynamic client: %v\n", err)
-		os.Exit(1)
-	}
-
-	return dynamicClient, err
-}
-
-func getkubeConfig() (*rest.Config, error) {
-	userHomeDir := util.HomeDir()
-
-	kubeConfigPath := filepath.Join(userHomeDir, ".kube", "config")
-	fmt.Printf("Using kubeconfig: %s\n", kubeConfigPath)
-
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	if err != nil {
-		fmt.Printf("error getting Kubernetes config: %v\n", err)
-		os.Exit(1)
-	}
-
-	return kubeConfig, err
 }
 
 func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterface, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, harborTarget harborOperator.HarborCluster) (harborOperator.HarborCluster, error) {
