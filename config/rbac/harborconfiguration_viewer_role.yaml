@@ -5,7 +5,7 @@ metadata:
   name: harborconfiguration-viewer-role
 rules:
 - apiGroups:
-  - harbor-configuration.harbor.configuration
+  - administration.harbor.configuration
   resources:
   - harborconfigurations
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - harbor-configuration.harbor.configuration
+  - administration.harbor.configuration
   resources:
   - harborconfigurations/status
   verbs:

@@ -1,4 +1,4 @@
-apiVersion: harbor-configuration.harbor.configuration/v1alpha1
+apiVersion: administration.harbor.configuration/v1alpha1
 kind: HarborConfiguration
 metadata:
   name: harborconfiguration-sample

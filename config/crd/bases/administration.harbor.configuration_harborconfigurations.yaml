@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: harborconfigurations.harbor-configuration.harbor.configuration
+  name: harborconfigurations.administration.harbor.configuration
 spec:
-  group: harbor-configuration.harbor.configuration
+  group: administration.harbor.configuration
   names:
     kind: HarborConfiguration
     listKind: HarborConfigurationList

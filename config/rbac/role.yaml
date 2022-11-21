@@ -14,6 +14,32 @@ rules:
   - get
   - list
 - apiGroups:
+  - administration.harbor.configuration
+  resources:
+  - harborconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - administration.harbor.configuration
+  resources:
+  - harborconfigurations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - administration.harbor.configuration
+  resources:
+  - harborconfigurations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - goharbor.io
   resources:
   - harborclusters
@@ -49,29 +75,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - harbor-configuration.harbor.configuration
-  resources:
-  - harborconfigurations
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - harbor-configuration.harbor.configuration
-  resources:
-  - harborconfigurations/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - harbor-configuration.harbor.configuration
-  resources:
-  - harborconfigurations/status
-  verbs:
-  - get
-  - patch
-  - update

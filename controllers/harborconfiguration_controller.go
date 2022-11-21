@@ -56,9 +56,9 @@ type HarborConfigurationReconciler struct {
 	*runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=harbor-configuration.harbor.configuration,resources=harborconfigurations/finalizers,verbs=update
+//+kubebuilder:rbac:groups=administration.harbor.configuration,resources=harborconfigurations,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=administration.harbor.configuration,resources=harborconfigurations/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=administration.harbor.configuration,resources=harborconfigurations/finalizers,verbs=update
 //+kubebuilder:rbac:groups=goharbor.io,resources=harborclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=goharbor.io,resources=harborclusters/status,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=goharbor.io,resources=harborclusters/finalizers,verbs=get;list;watch;create;update;patch;delete

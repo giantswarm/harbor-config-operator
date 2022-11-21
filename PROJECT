@@ -9,7 +9,7 @@ resources:
     namespaced: true
   controller: true
   domain: harbor.configuration
-  group: harbor-configuration
+  group: administration
   kind: HarborConfiguration
   path: github.com/giantswarm/harbor-config-operator/api/v1alpha1
   version: v1alpha1
