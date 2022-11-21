@@ -1,0 +1,127 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: harborconfigurations.administration.harbor.configuration
+spec:
+  group: administration.harbor.configuration
+  names:
+    kind: HarborConfiguration
+    listKind: HarborConfigurationList
+    plural: harborconfigurations
+    singular: harborconfiguration
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              harborTarget:
+                properties:
+                  harborUsername:
+                    type: string
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                type: object
+              projectReq:
+                properties:
+                  isPublic:
+                    type: boolean
+                  projectName:
+                    type: string
+                  storageLimit:
+                    format: int64
+                    type: integer
+                type: object
+              registry:
+                properties:
+                  credential:
+                    properties:
+                      access_key:
+                        description: Access key, e.g. user name when credential type
+                          is 'basic'.
+                        type: string
+                      access_secret:
+                        description: Access secret, e.g. password when credential
+                          type is 'basic'.
+                        type: string
+                      type:
+                        description: Credential type, such as 'basic', 'oauth'.
+                        type: string
+                    type: object
+                  description:
+                    type: string
+                  name:
+                    type: string
+                  targetRegistryUrl:
+                    type: string
+                  type:
+                    type: string
+                type: object
+              replication:
+                properties:
+                  description:
+                    type: string
+                  destinationNamespace:
+                    type: string
+                  destinationRegistry:
+                    x-kubernetes-preserve-unknown-fields: true
+                  enablePolicy:
+                    type: boolean
+                  filters:
+                    items:
+                      x-kubernetes-preserve-unknown-fields: true
+                    type: array
+                  name:
+                    type: string
+                  override:
+                    type: boolean
+                  registryName:
+                    type: string
+                  replicateDeletion:
+                    type: boolean
+                  trigger:
+                    x-kubernetes-preserve-unknown-fields: true
+                type: object
+            type: object
+          status:
+            properties:
+              projectId:
+                type: string
+              registryId:
+                format: int64
+                type: integer
+              replicationId:
+                format: int64
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

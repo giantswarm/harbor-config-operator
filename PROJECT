@@ -1,0 +1,16 @@
+domain: harbor.configuration
+layout:
+- go.kubebuilder.io/v3
+projectName: harbor-config-operator
+repo: github.com/giantswarm/harbor-config-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: harbor.configuration
+  group: administration
+  kind: HarborConfiguration
+  path: github.com/giantswarm/harbor-config-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

@@ -1,0 +1,6 @@
+apiVersion: administration.harbor.configuration/v1alpha1
+kind: HarborConfiguration
+metadata:
+  name: harborconfiguration-sample
+spec:
+  # TODO(user): Add fields here

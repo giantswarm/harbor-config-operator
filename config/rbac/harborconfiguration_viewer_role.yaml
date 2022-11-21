@@ -1,0 +1,20 @@
+# permissions for end users to view harborconfigurations.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: harborconfiguration-viewer-role
+rules:
+- apiGroups:
+  - administration.harbor.configuration
+  resources:
+  - harborconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - administration.harbor.configuration
+  resources:
+  - harborconfigurations/status
+  verbs:
+  - get
