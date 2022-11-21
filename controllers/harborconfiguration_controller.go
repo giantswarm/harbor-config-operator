@@ -50,10 +50,11 @@ var (
 		Resource: "harborclusters",
 	}
 
-	RegistryNotFoundError        = &harborerrors.ErrRegistryNotFound{}
-	ProjectNotFoundError         = &harborerrors.ErrProjectNotFound{}
-	ProjectNameAlreadyExistError = &harborerrors.ErrProjectNameAlreadyExists{}
-	NotFoundError                = &harborerrors.ErrNotFound{}
+	RegistryNotFoundError         = &harborerrors.ErrRegistryNotFound{}
+	RegistryNameAlreadyExistError = &harborerrors.ErrRegistryNameAlreadyExists{}
+	ProjectNotFoundError          = &harborerrors.ErrProjectNotFound{}
+	ProjectNameAlreadyExistError  = &harborerrors.ErrProjectNameAlreadyExists{}
+	NotFoundError                 = &harborerrors.ErrNotFound{}
 )
 
 // HarborConfigurationReconciler reconciles a HarborConfiguration object
@@ -138,14 +139,8 @@ func (r *HarborConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error
 }
 
 func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
-
-	if err != nil && errors.Is(err, RegistryNotFoundError) {
-		err = client.NewRegistry(ctx, &registry)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	} else if err == nil {
+	err := client.NewRegistry(ctx, &registry)
+	if errors.Is(err, RegistryNameAlreadyExistError) {
 		update := &modelv2.RegistryUpdate{
 			Name:        &harborConfiguration.Spec.Registry.Name,
 			URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
@@ -156,6 +151,11 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 			update.AccessSecret = &harborConfiguration.Spec.Registry.Credential.AccessSecret
 			update.CredentialType = &harborConfiguration.Spec.Registry.Credential.Type
 		}
+		srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
 		err = client.UpdateRegistry(ctx, update, srcRegistry.ID)
 		if err != nil {
 			return ctrl.Result{}, err
