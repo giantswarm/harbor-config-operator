@@ -390,20 +390,23 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 }
 
 func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	err := client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+	deletionLog := ctrl.Log.WithName("deletion")
+
+	err := client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
 	if err != nil {
-		return ctrl.Result{}, err
+		deletionLog.Error(err, "failed to delete replication policy by id.")
 	}
 
 	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
 	if err != nil {
-		return ctrl.Result{}, err
+		deletionLog.Error(err, "failed to delete project by id.")
 	}
 
-	err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+	err = client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
 	if err != nil {
-		return ctrl.Result{}, err
+		deletionLog.Error(err, "failed to delete registry by id.")
 	}
+
 	return ctrl.Result{}, nil
 }
 
