@@ -390,55 +390,60 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 }
 
 func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	deletionLog := ctrl.Log.WithName("deletion")
+	deleteReplicationRule(ctx, harborConfiguration, client)
+	deleteProject(ctx, harborConfiguration, client)
+	deleteRegistry(ctx, harborConfiguration, client)
+	return ctrl.Result{}, nil
+}
+
+func deleteReplicationRule(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
 	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
 	if errors.Is(err, &harborerrors.ErrNotFound{}) {
-		deletionLog.Error(err, "skipping as policy does not exist.")
+		return ctrl.Result{}, err
 	} else if err != nil {
-		deletionLog.Error(err, "failed to get replication policy by id to delete.")
+		return ctrl.Result{}, err
 	} else {
 		err = client.DeleteReplicationPolicyByID(ctx, replicationFound.ID)
 		if err != nil {
-			deletionLog.Error(err, "failed to delete replication policy by id.")
+			return ctrl.Result{}, err
 		}
 	}
+	return ctrl.Result{}, nil
+}
 
-	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
-	if errors.Is(err, &harborerrors.ErrRegistryNotFound{}) {
-		deletionLog.Error(err, "skipping as registry does not exist.")
-	} else if err != nil {
-		deletionLog.Error(err, "failed to get registry by id to delete.")
-	}
-
+func deleteProject(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
 	requestedProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
 		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
 		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
 	}
 
-	// Can't run if srcRegistry is nil
 	existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
 	if errors.Is(err, &harborerrors.ErrProjectNotFound{}) {
-		deletionLog.Error(err, "skipping as project does not exist.")
+		return ctrl.Result{}, err
 	} else if err != nil {
-		deletionLog.Error(err, "failed to get project by name to delete.")
+		return ctrl.Result{}, err
 	} else {
-		// Getting error project mismatch
 		err = client.DeleteProject(ctx, existingProject.Name)
-		if errors.Is(err, &harborerrors.ErrProjectNameNotProvided{}) {
-			deletionLog.Error(err, "skipping as project does not exist.")
+		if err != nil {
+			return ctrl.Result{}, err
 		}
 	}
+	return ctrl.Result{}, nil
+}
 
-	if srcRegistry != nil {
+func deleteRegistry(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+	if errors.Is(err, &harborerrors.ErrRegistryNotFound{}) {
+		return ctrl.Result{}, err
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
 		err = client.DeleteRegistryByID(ctx, srcRegistry.ID)
 		if err != nil {
-			deletionLog.Error(err, "failed to delete registry by id.")
+			return ctrl.Result{}, err
 		}
-	} else {
-		deletionLog.Error(err, "cannot delete registry without id.")
 	}
-
 	return ctrl.Result{}, nil
 }
 
