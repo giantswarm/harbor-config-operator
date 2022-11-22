@@ -398,16 +398,14 @@ func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alp
 
 func deleteReplicationRule(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
 	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
-	if errors.Is(err, &harborerrors.ErrNotFound{}) {
+	if err != nil {
 		return ctrl.Result{}, err
-	} else if err != nil {
-		return ctrl.Result{}, err
-	} else {
-		err = client.DeleteReplicationPolicyByID(ctx, replicationFound.ID)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
 	}
+	err = client.DeleteReplicationPolicyByID(ctx, replicationFound.ID)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -419,16 +417,15 @@ func deleteProject(ctx context.Context, harborConfiguration harborconfigurationv
 	}
 
 	existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
-	if errors.Is(err, &harborerrors.ErrProjectNotFound{}) {
+	if err != nil {
 		return ctrl.Result{}, err
-	} else if err != nil {
-		return ctrl.Result{}, err
-	} else {
-		err = client.DeleteProject(ctx, existingProject.Name)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
 	}
+
+	err = client.DeleteProject(ctx, existingProject.Name)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -436,13 +433,11 @@ func deleteRegistry(ctx context.Context, harborConfiguration harborconfiguration
 	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
 	if errors.Is(err, &harborerrors.ErrRegistryNotFound{}) {
 		return ctrl.Result{}, err
-	} else if err != nil {
+	}
+
+	err = client.DeleteRegistryByID(ctx, srcRegistry.ID)
+	if err != nil {
 		return ctrl.Result{}, err
-	} else {
-		err = client.DeleteRegistryByID(ctx, srcRegistry.ID)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 	return ctrl.Result{}, nil
 }
