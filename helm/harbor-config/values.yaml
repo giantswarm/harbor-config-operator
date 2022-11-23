@@ -27,9 +27,6 @@ managerConfig:
   controllerManagerConfigYaml:
     health:
       healthProbeBindAddress: :8081
-    leaderElection:
-      leaderElect: true
-      resourceName: c8ffa958.harbor.configuration
     metrics:
       bindAddress: 127.0.0.1:8080
     webhook:
