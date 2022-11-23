@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
 	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
@@ -239,7 +240,7 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		harborConfiguration.Spec.Replication.Description,
 		harborConfiguration.Spec.Replication.Name)
 
-	if errors.Is(err, &replication.ErrReplicationNameAlreadyExists{}) {
+	if errors.Is(err, &rep.ErrReplicationNameAlreadyExists{}) {
 		update := modelv2.ReplicationPolicy{
 			Name:          harborConfiguration.Spec.Replication.Name,
 			Description:   harborConfiguration.Spec.Replication.Description,
