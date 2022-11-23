@@ -27,9 +27,7 @@ spec:
         kubectl.kubernetes.io/default-container: manager
     spec:
       containers:
-      - args:
-        - --leader-elect
-        command:
+      - command:
         - /manager
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
