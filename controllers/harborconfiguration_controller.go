@@ -26,9 +26,9 @@ import (
 
 	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
 	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
-	rep "github.com/mittwald/goharbor-client/v5/apiv1/replication"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
 	modelv2 "github.com/mittwald/goharbor-client/v5/apiv2/model"
+	rep "github.com/mittwald/goharbor-client/v5/apiv2/pkg/clients/replication"
 	harborerrors "github.com/mittwald/goharbor-client/v5/apiv2/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -393,17 +393,52 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 }
 
 func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	err := client.DeleteRegistryByID(ctx, harborConfiguration.Status.RegistryId)
+	deleteReplicationRule(ctx, harborConfiguration, client)
+	deleteProject(ctx, harborConfiguration, client)
+	deleteRegistry(ctx, harborConfiguration, client)
+	return ctrl.Result{}, nil
+}
+
+func deleteReplicationRule(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	replicationFound, err := client.GetReplicationPolicyByName(ctx, harborConfiguration.Spec.Replication.Name)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	err = client.DeleteReplicationPolicyByID(ctx, replicationFound.ID)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	err = client.DeleteProject(ctx, harborConfiguration.Status.ProjectId)
+	return ctrl.Result{}, nil
+}
+
+func deleteProject(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	requestedProject := &modelv2.ProjectReq{
+		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
+		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
+		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
+	}
+
+	existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	err = client.DeleteReplicationPolicyByID(ctx, harborConfiguration.Status.ReplicationId)
+	err = client.DeleteProject(ctx, existingProject.Name)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+func deleteRegistry(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+	if errors.Is(err, &harborerrors.ErrRegistryNotFound{}) {
+		return ctrl.Result{}, err
+	}
+
+	err = client.DeleteRegistryByID(ctx, srcRegistry.ID)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
