@@ -6,6 +6,3 @@ metrics:
   bindAddress: 127.0.0.1:8080
 webhook:
   port: 9443
-leaderElection:
-  leaderElect: true
-  resourceName: c8ffa958.harbor.configuration
