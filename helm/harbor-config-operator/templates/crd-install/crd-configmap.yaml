@@ -1,0 +1,28 @@
+{{/*
+We have to create individual configmaps for each CRD - they exceed the total
+allowed length for a configmap if they are combined.
+*/}}
+{{ $currentScope := . }}
+{{- if .Values.crds.install }}
+  {{- range $path, $_ := .Files.Glob "crd/**" }}
+    {{- with $currentScope }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "harbor-config-operator.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    # create hook dependencies in the right order
+    "helm.sh/hook-weight": "-5"
+    {{- include "harbor-config-operator.CRDInstallAnnotations" . | nindent 4 }}
+  labels:
+    app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config-operator.CRDInstallSelector" . | quote }}
+data:
+  content: |
+{{ .Files.Get $path | indent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

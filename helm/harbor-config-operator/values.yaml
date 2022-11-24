@@ -1,0 +1,47 @@
+controllerManager:
+  manager:
+    image:
+      repository: ajazee/harborconfiguration
+      tag: v0.10
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+  replicas: 1
+kubernetesClusterDomain: cluster.local
+managerConfig:
+  controllerManagerConfigYaml:
+    health:
+      healthProbeBindAddress: :8081
+    metrics:
+      bindAddress: 127.0.0.1:8080
+    webhook:
+      port: 9443
+metricsService:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  type: ClusterIP
+
+pod:
+  user:
+    id: 1000
+  group:
+    id: 1000
+
+
+image:
+  registry: docker.io
+
+# We install CRDs through a Job with the helm specific crd folder.
+crds:
+  install: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 750m
+      memory: 1024Mi

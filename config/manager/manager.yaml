@@ -29,8 +29,6 @@ spec:
       containers:
       - command:
         - /manager
-        args:
-        - --leader-elect
         image: controller:latest
         name: manager
         securityContext:
@@ -50,9 +48,6 @@ spec:
         # TODO(user): Configure the resources accordingly based on the project requirements.
         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
         resources:
-          limits:
-            cpu: 500m
-            memory: 128Mi
           requests:
             cpu: 10m
             memory: 64Mi

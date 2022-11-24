@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: ajazee/harborconfiguration
-  newTag: v0.9
+  newTag: v0.10
