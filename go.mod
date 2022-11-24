@@ -5,14 +5,16 @@ go 1.17
 require (
 	github.com/mittwald/goharbor-client/v5 v5.1.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.24.1
 	k8s.io/apiextensions-apiserver v0.23.5
 	k8s.io/apimachinery v0.23.5
 	k8s.io/client-go v0.23.5
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
-require github.com/goharbor/harbor-operator v1.3.0
+require (
+	github.com/g8rswimmer/error-chain v1.0.0
+	github.com/goharbor/harbor-operator v1.3.0
+)
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
