@@ -11,7 +11,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
-require github.com/goharbor/harbor-operator v1.3.0
+require (
+	github.com/g8rswimmer/error-chain v1.0.0
+	github.com/goharbor/harbor-operator v1.3.0
+)
 
 require (
 	cloud.google.com/go v0.97.0 // indirect

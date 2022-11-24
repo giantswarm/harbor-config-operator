@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 
+	chain "github.com/g8rswimmer/error-chain"
 	harborOperator "github.com/goharbor/harbor-operator/apis/goharbor.io/v1beta1"
 	"github.com/goharbor/harbor-operator/pkg/cluster/k8s"
 	apiv2 "github.com/mittwald/goharbor-client/v5/apiv2"
@@ -334,9 +335,24 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 }
 
 func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	deleteReplicationRule(ctx, harborConfiguration, client)
-	deleteProject(ctx, harborConfiguration, client)
-	deleteRegistry(ctx, harborConfiguration, client)
+	errors := chain.New()
+	_, deleteReplicationRuleErr := deleteReplicationRule(ctx, harborConfiguration, client)
+	if deleteReplicationRuleErr != nil {
+		errors.Add(deleteReplicationRuleErr)
+	}
+	_, deleteProjectErr := deleteProject(ctx, harborConfiguration, client)
+	if deleteProjectErr != nil {
+		errors.Add(deleteProjectErr)
+	}
+	_, deleteRegistryErr := deleteRegistry(ctx, harborConfiguration, client)
+	if deleteRegistryErr != nil {
+		errors.Add(deleteRegistryErr)
+	}
+
+	if errors != nil {
+		return ctrl.Result{}, errors
+	}
+
 	return ctrl.Result{}, nil
 }
 
