@@ -2,24 +2,24 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "harbor-config.crdInstall" . }}-crd-job
+  name: {{ include "harbor-config-operator.crdInstall" . }}-crd-job
   namespace: {{ .Release.Namespace | quote }}
   annotations:
     # create hook dependencies in the right order
     "helm.sh/hook-weight": "-1"
-    {{- include "harbor-config.CRDInstallAnnotations" . | nindent 4 }}
+    {{- include "harbor-config-operator.CRDInstallAnnotations" . | nindent 4 }}
   labels:
-    app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-    {{- include "harbor-config.selectorLabels" . | nindent 4 }}
-    role: {{ include "harbor-config.CRDInstallSelector" . | quote }}
+    app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config-operator.CRDInstallSelector" . | quote }}
 spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-        {{- include "harbor-config.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+        {{- include "harbor-config-operator.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "harbor-config.crdInstall" . }}
+      serviceAccountName: {{ include "harbor-config-operator.crdInstall" . }}
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534
@@ -50,7 +50,7 @@ spec:
     {{- with $currentScope }}
         - name: {{ $path | base | trimSuffix ".yaml" }}
           configMap:
-            name: {{ include "harbor-config.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
+            name: {{ include "harbor-config-operator.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
             items:
               - key: content
                 path: {{ $path | base }}

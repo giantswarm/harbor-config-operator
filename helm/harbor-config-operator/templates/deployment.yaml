@@ -1,28 +1,28 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "harbor-config.fullname" . }}-controller-manager
+  name: {{ include "harbor-config-operator.fullname" . }}-controller-manager
   labels:
-  {{- include "harbor-config.labels" . | nindent 4 }}
+  {{- include "harbor-config-operator.labels" . | nindent 4 }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "harbor-config.fullname" . }}-controller-manager
+  name: {{ include "harbor-config-operator.fullname" . }}-controller-manager
   labels:
     control-plane: controller-manager
-  {{- include "harbor-config.labels" . | nindent 4 }}
+  {{- include "harbor-config-operator.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controllerManager.replicas }}
   selector:
     matchLabels:
       control-plane: controller-manager
-    {{- include "harbor-config.selectorLabels" . | nindent 6 }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
         control-plane: controller-manager
-      {{- include "harbor-config.selectorLabels" . | nindent 8 }}
+      {{- include "harbor-config-operator.selectorLabels" . | nindent 8 }}
       annotations:
         kubectl.kubernetes.io/default-container: manager
     spec:
@@ -54,6 +54,6 @@ spec:
       securityContext:
         runAsUser: {{ .Values.pod.user.id }}
         runAsGroup: {{ .Values.pod.group.id }}
-      serviceAccountName: {{ include "harbor-config.fullname" . }}-controller-manager
+      serviceAccountName: {{ include "harbor-config-operator.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
 

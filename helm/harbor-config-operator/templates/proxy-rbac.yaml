@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "harbor-config.fullname" . }}-proxy-role
+  name: {{ include "harbor-config-operator.fullname" . }}-proxy-role
   labels:
-  {{- include "harbor-config.labels" . | nindent 4 }}
+  {{- include "harbor-config-operator.labels" . | nindent 4 }}
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -21,15 +21,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "harbor-config.fullname" . }}-proxy-rolebinding
+  name: {{ include "harbor-config-operator.fullname" . }}-proxy-rolebinding
   labels:
-  {{- include "harbor-config.labels" . | nindent 4 }}
+  {{- include "harbor-config-operator.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: '{{ include "harbor-config.fullname" . }}-proxy-role'
+  name: '{{ include "harbor-config-operator.fullname" . }}-proxy-role'
 subjects:
 - kind: ServiceAccount
-  name: '{{ include "harbor-config.fullname" . }}-controller-manager'
+  name: '{{ include "harbor-config-operator.fullname" . }}-controller-manager'
   namespace: '{{ .Release.Namespace }}'
 

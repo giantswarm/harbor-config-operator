@@ -10,16 +10,16 @@ allowed length for a configmap if they are combined.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "harbor-config.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
+  name: {{ include "harbor-config-operator.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
   namespace: {{ .Release.Namespace | quote }}
   annotations:
     # create hook dependencies in the right order
     "helm.sh/hook-weight": "-5"
-    {{- include "harbor-config.CRDInstallAnnotations" . | nindent 4 }}
+    {{- include "harbor-config-operator.CRDInstallAnnotations" . | nindent 4 }}
   labels:
-    app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-    {{- include "harbor-config.selectorLabels" . | nindent 4 }}
-    role: {{ include "harbor-config.CRDInstallSelector" . | quote }}
+    app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config-operator.CRDInstallSelector" . | quote }}
 data:
   content: |
 {{ .Files.Get $path | indent 4 }}

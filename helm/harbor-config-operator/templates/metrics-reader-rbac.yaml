@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "harbor-config.fullname" . }}-metrics-reader
+  name: {{ include "harbor-config-operator.fullname" . }}-metrics-reader
   labels:
-  {{- include "harbor-config.labels" . | nindent 4 }}
+  {{- include "harbor-config-operator.labels" . | nindent 4 }}
 rules:
 - nonResourceURLs:
   - /metrics

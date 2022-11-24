@@ -3,21 +3,21 @@
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: {{ include "harbor-config.crdInstall" . }}
+  name: {{ include "harbor-config-operator.crdInstall" . }}
   namespace: {{ .Release.Namespace | quote }}
   annotations:
     # create hook dependencies in the right order
     "helm.sh/hook-weight": "-7"
-    {{- include "harbor-config.CRDInstallAnnotations" . | nindent 4 }}
+    {{- include "harbor-config-operator.CRDInstallAnnotations" . | nindent 4 }}
   labels:
-    app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-    {{- include "harbor-config.selectorLabels" . | nindent 4 }}
-    role: {{ include "harbor-config.CRDInstallSelector" . | quote }}
+    app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config-operator.CRDInstallSelector" . | quote }}
 spec:
   endpointSelector:
     matchLabels:
-      app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-      {{- include "harbor-config.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+      {{- include "harbor-config-operator.selectorLabels" . | nindent 6 }}
   egress:
     - toEntities:
         - kube-apiserver
@@ -30,21 +30,21 @@ spec:
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
-  name: {{ include "harbor-config.crdInstall" . }}
+  name: {{ include "harbor-config-operator.crdInstall" . }}
   namespace: {{ .Release.Namespace | quote }}
   annotations:
     # create hook dependencies in the right order
     "helm.sh/hook-weight": "-7"
-    {{- include "harbor-config.CRDInstallAnnotations" . | nindent 4 }}
+    {{- include "harbor-config-operator.CRDInstallAnnotations" . | nindent 4 }}
   labels:
-    app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-    {{- include "harbor-config.selectorLabels" . | nindent 4 }}
-    role: {{ include "harbor-config.CRDInstallSelector" . | quote }}
+    app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+    {{- include "harbor-config-operator.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config-operator.CRDInstallSelector" . | quote }}
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
-      {{- include "harbor-config.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "harbor-config-operator.crdInstall" . | quote }}
+      {{- include "harbor-config-operator.selectorLabels" . | nindent 6 }}
   # allow egress traffic to the Kubernetes API
   egress:
     - ports:
