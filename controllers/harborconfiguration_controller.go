@@ -258,7 +258,12 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+		// If ErrReplicationNameAlreadyExists is returned, it is because there is no new
+		// information to update the object with.
 		err = client.UpdateReplicationPolicy(ctx, &update, replicationFound.ID)
+		if errors.Is(err, &rep.ErrReplicationNameAlreadyExists{}) {
+			err = fmt.Errorf("no update required: %w", err)
+		}
 		if err != nil {
 			return ctrl.Result{}, err
 		}
