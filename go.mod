@@ -1,6 +1,6 @@
 module github.com/giantswarm/harbor-config-operator
 
-go 1.17
+go 1.19
 
 require (
 	github.com/mittwald/goharbor-client/v5 v5.1.0
