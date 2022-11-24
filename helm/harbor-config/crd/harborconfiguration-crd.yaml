@@ -5,7 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   labels:
-  {{- include "harbor-config.labels" . | nindent 4 }}
+    helm.sh/chart: harbor-config-0.1.0
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
 spec:
   group: administration.harbor.configuration
   names:

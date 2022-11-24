@@ -24,3 +24,24 @@ metricsService:
     protocol: TCP
     targetPort: https
   type: ClusterIP
+
+pod:
+  user:
+    id: 1000
+  group:
+    id: 1000
+
+
+image:
+  registry: docker.io
+
+# We install CRDs through a Job with the helm specific crd folder.
+crds:
+  install: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 750m
+      memory: 1024Mi

@@ -52,6 +52,7 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       securityContext:
-        runAsNonRoot: true
+        runAsUser: {{ .Values.pod.user.id }}
+        runAsGroup: {{ .Values.pod.group.id }}
       serviceAccountName: {{ include "harbor-config.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10

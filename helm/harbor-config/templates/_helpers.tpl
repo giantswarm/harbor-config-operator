@@ -60,3 +60,18 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{- define "harbor-config.CRDInstallAnnotations" -}}
+"helm.sh/hook": "pre-install,pre-upgrade"
+"helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
+{{- end -}}
+
+{{- define "harbor-config.crdInstall" -}}
+{{- printf "%s-%s" ( include "harbor-config.name" . ) "crd-install" | replace "+" "_" | trimSuffix "-" -}}
+{{- end -}}
+
+{{/* Create a label which can be used to select any orphaned crd-install hook resources */}}
+{{- define "harbor-config.CRDInstallSelector" -}}
+{{- printf "%s" "crd-install-hook" -}}
+{{- end -}}

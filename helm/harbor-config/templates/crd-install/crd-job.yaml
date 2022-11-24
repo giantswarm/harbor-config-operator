@@ -1,0 +1,61 @@
+{{- if .Values.crds.install }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "harbor-config.crdInstall" . }}-crd-job
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    # create hook dependencies in the right order
+    "helm.sh/hook-weight": "-1"
+    {{- include "harbor-config.CRDInstallAnnotations" . | nindent 4 }}
+  labels:
+    app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
+    {{- include "harbor-config.selectorLabels" . | nindent 4 }}
+    role: {{ include "harbor-config.CRDInstallSelector" . | quote }}
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: {{ include "harbor-config.crdInstall" . | quote }}
+        {{- include "harbor-config.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "harbor-config.crdInstall" . }}
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: kubectl
+          image: "{{ .Values.image.registry }}/giantswarm/docker-kubectl:latest"
+          command:
+            - sh
+            - -c
+            - |
+              set -o errexit ; set -o xtrace ; set -o nounset
+              # piping stderr to stdout means kubectl's errors are surfaced
+              # in the pod's logs.
+              kubectl apply --server-side -f /data/ 2>&1
+          volumeMounts:
+{{- range $path, $_ := .Files.Glob "crd/**" }}
+            - name: {{ $path | base | trimSuffix ".yaml" }}
+              mountPath: /data/{{ $path | base }}
+              subPath: {{ $path | base }}
+{{- end }}
+          resources: {{- toYaml .Values.crds.resources | nindent 12 }}
+      volumes:
+{{ $currentScope := . }}
+{{- range $path, $_ := .Files.Glob "crd/**" }}
+    {{- with $currentScope }}
+        - name: {{ $path | base | trimSuffix ".yaml" }}
+          configMap:
+            name: {{ include "harbor-config.crdInstall" . }}-{{ $path | base | trimSuffix ".yaml" }}
+            items:
+              - key: content
+                path: {{ $path | base }}
+{{- end }}
+{{- end }}
+      restartPolicy: Never
+  backoffLimit: 10
+{{- end }}
