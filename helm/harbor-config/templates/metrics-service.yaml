@@ -12,3 +12,4 @@ spec:
   {{- include "harbor-config.selectorLabels" . | nindent 4 }}
   ports:
 	{{- .Values.metricsService.ports | toYaml | nindent 2 -}}
+

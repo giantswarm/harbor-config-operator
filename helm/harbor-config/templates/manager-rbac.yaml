@@ -90,3 +90,4 @@ subjects:
 - kind: ServiceAccount
   name: '{{ include "harbor-config.fullname" . }}-controller-manager'
   namespace: '{{ .Release.Namespace }}'
+

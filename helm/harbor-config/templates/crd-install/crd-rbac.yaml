@@ -61,3 +61,4 @@ subjects:
     name: {{ include "harbor-config.crdInstall" . }}
     namespace: {{ .Release.Namespace | quote }}
 {{- end }}
+
