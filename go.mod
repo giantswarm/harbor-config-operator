@@ -5,7 +5,6 @@ go 1.17
 require (
 	github.com/mittwald/goharbor-client/v5 v5.1.0
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.24.1
 	k8s.io/apiextensions-apiserver v0.23.5
 	k8s.io/apimachinery v0.23.5
 	k8s.io/client-go v0.23.5
