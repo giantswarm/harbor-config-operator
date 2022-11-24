@@ -11,4 +11,3 @@ spec:
     name: {{ include "harbor-config-operator.fullname" . }}-controller-manager
   updatePolicy:
     updateMode: Auto
-

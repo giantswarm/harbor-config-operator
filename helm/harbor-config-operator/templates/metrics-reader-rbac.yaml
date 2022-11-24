@@ -9,4 +9,3 @@ rules:
   - /metrics
   verbs:
   - get
-

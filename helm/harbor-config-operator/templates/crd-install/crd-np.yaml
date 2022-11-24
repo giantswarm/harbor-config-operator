@@ -65,4 +65,3 @@ spec:
     - Ingress
   {{- end }}
 {{- end }}
-

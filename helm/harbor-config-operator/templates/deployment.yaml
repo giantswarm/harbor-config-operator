@@ -56,4 +56,3 @@ spec:
         runAsGroup: {{ .Values.pod.group.id }}
       serviceAccountName: {{ include "harbor-config-operator.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
-

@@ -59,4 +59,3 @@ spec:
       restartPolicy: Never
   backoffLimit: 10
 {{- end }}
-
