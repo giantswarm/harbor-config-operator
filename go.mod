@@ -11,6 +11,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
+replace github.com/mittwald/goharbor-client => github.com/giantswarm/goharbor-client v1.0.0
+
 require (
 	github.com/g8rswimmer/error-chain v1.0.0
 	github.com/goharbor/harbor-operator v1.3.0
