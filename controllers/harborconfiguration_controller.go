@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	harborconfigurationv1alpha1 "github.com/giantswarm/harbor-config-operator/api/v1alpha1"
@@ -97,7 +98,16 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 		return ctrl.Result{}, err
 	}
 
+	harborFinaliserName := "administration.harbor.configuration/finalizer"
+
 	if harborConfiguration.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(&harborConfiguration, harborFinaliserName) {
+			controllerutil.AddFinalizer(&harborConfiguration, harborFinaliserName)
+			if err := r.Update(ctx, &harborConfiguration); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
 		_, err = r.reconcileAll(ctx, harborConfiguration, client)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -108,9 +118,16 @@ func (r *HarborConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.
 			return ctrl.Result{}, err
 		}
 	} else {
-		_, err = deleteAll(ctx, harborConfiguration, client)
-		if err != nil {
-			return ctrl.Result{}, err
+
+		if controllerutil.ContainsFinalizer(&harborConfiguration, harborFinaliserName) {
+			_, err = deleteAll(ctx, harborConfiguration, client)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			controllerutil.RemoveFinalizer(&harborConfiguration, harborFinaliserName)
+			if err := r.Update(ctx, &harborConfiguration); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
 	return ctrl.Result{}, nil
@@ -335,22 +352,22 @@ func getConcreteHarborType(ctx context.Context, crdClient dynamic.ResourceInterf
 }
 
 func deleteAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	errors := chain.New()
+	errorChain := chain.New()
 	_, deleteReplicationRuleErr := deleteReplicationRule(ctx, harborConfiguration, client)
-	if deleteReplicationRuleErr != nil {
-		errors.Add(deleteReplicationRuleErr)
+	if deleteReplicationRuleErr != nil && !(errors.Is(deleteReplicationRuleErr, &harborerrors.ErrNotFound{})) {
+		errorChain.Add(deleteReplicationRuleErr)
 	}
 	_, deleteProjectErr := deleteProject(ctx, harborConfiguration, client)
-	if deleteProjectErr != nil {
-		errors.Add(deleteProjectErr)
+	if deleteProjectErr != nil && !(errors.Is(deleteProjectErr, &harborerrors.ErrProjectNotFound{})) {
+		errorChain.Add(deleteProjectErr)
 	}
 	_, deleteRegistryErr := deleteRegistry(ctx, harborConfiguration, client)
-	if deleteRegistryErr != nil {
-		errors.Add(deleteRegistryErr)
+	if deleteRegistryErr != nil && !(errors.Is(deleteRegistryErr, &harborerrors.ErrRegistryNotFound{})) {
+		errorChain.Add(deleteRegistryErr)
 	}
 
-	if errors != nil {
-		return ctrl.Result{}, errors
+	if len(errorChain.Errors()) > 0 {
+		return ctrl.Result{}, errorChain.Unwrap()
 	}
 
 	return ctrl.Result{}, nil
