@@ -46,11 +46,11 @@ spec:
                 type: object
               projectReq:
                 properties:
-                  isPublic:
+                  public:
                     type: boolean
                   projectName:
                     type: string
-                  storageLimit:
+                  storageQuota:
                     format: int64
                     type: integer
                 type: object
@@ -74,9 +74,9 @@ spec:
                     type: string
                   name:
                     type: string
-                  targetRegistryUrl:
+                  endpointUrl:
                     type: string
-                  type:
+                  provider:
                     type: string
                 type: object
               replication:
@@ -101,7 +101,7 @@ spec:
                     type: string
                   replicateDeletion:
                     type: boolean
-                  trigger:
+                  triggerMode:
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
             type: object
