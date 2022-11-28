@@ -30,6 +30,13 @@ spec:
       - command:
         - /manager
         env:
+        - name: HARBOR_CORE_PROTOCOL
+        {{- if eq .Values.controllerManager.manager.internalTLS.enabled true }}
+          value: "https"
+        {{- else }}
+          value: "http"
+        {{- end }}
+
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
@@ -51,6 +58,24 @@ spec:
           }}
         securityContext:
           allowPrivilegeEscalation: false
+      {{- if eq .Values.controllerManager.manager.internalTLS.enabled true }}
+        volumeMounts:
+         - name: harbor-ca-crt
+           mountPath: /etc/ssl/certs/harbor-ca.crt
+           subPath: tls.crt
+           readOnly: false
+         - name: harbor-ca-key
+           mountPath: /etc/ssl/certs/harbor-ca.key
+           subPath: tls.key
+           readOnly: false
+      volumes:
+        - name: harbor-ca-crt
+          secret:
+            secretName: {{ .Values.controllerManager.manager.internalTLS.caCertSecretRef }}
+        - name: harbor-ca-key
+          secret:
+            secretName: {{ .Values.controllerManager.manager.internalTLS.caCertSecretRef }}
+      {{- end }}
       securityContext:
         runAsUser: {{ .Values.pod.user.id }}
         runAsGroup: {{ .Values.pod.group.id }}

@@ -332,8 +332,11 @@ func getHarborSecret(ctx context.Context, clientSet *kubernetes.Clientset, harbo
 
 func getHarborURL(harborcluster *harborOperator.HarborCluster) string {
 	url := os.Getenv("HARBOR_CORE_URL")
+	protocol := os.Getenv("HARBOR_CORE_PROTOCOL")
+
 	if url == "" {
-		url = fmt.Sprintf("http://%s-harbor-harbor-core.%s/api/v2.0", harborcluster.Name, harborcluster.Namespace)
+		url = fmt.Sprintf("%s://%s-harbor-harbor-core/api/v2.0",
+			protocol, harborcluster.Name)
 	}
 	return url
 }

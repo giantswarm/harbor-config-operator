@@ -1,12 +1,15 @@
 controllerManager:
   manager:
     image:
-      repository: ajazee/harborconfiguration
-      tag: v0.10
+      repository: giantswarm/harbor-config-operator
+      tag: 0.0.0-b64187cb80af250293fb7118567cee7b7a5f4d46
     resources:
       requests:
         cpu: 10m
         memory: 64Mi
+    internalTLS:
+      enabled: true
+      caCertSecretRef: harborcluster-harbor-harbor-internal-tls-core
   replicas: 1
 kubernetesClusterDomain: cluster.local
 managerConfig:
