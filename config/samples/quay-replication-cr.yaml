@@ -4,18 +4,18 @@ metadata:
   name: harborconfiguration
 spec:
   harborTarget:
-    name: harborcluster
+    name: harborcluster-sample
     namespace: harbor-cluster
     harborUsername: admin
   registry:
     name: quay
-    type: quay
-    targetRegistryUrl: https://quay.io
+    provider: quay
+    endpointUrl: https://quay.io
     description: Endpoint created via crd
   projectReq:
     projectName: quay-project
-    storageLimit: -1
-    isPublic: true
+    storageQuota: -1
+    public: true
   replication:
     name: quay-replication
     registryName: quay
@@ -23,7 +23,7 @@ spec:
     override: true
     destinationNamespace: quay-project
     filters:
-    - type: name
-      value: giantswarm/alpine
-    trigger:
+      - type: name
+        value: giantswarm/alpine
+    triggerMode:
       type: manual

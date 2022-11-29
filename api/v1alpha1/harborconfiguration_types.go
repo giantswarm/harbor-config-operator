@@ -64,11 +64,11 @@ type HarborTarget struct {
 }
 
 type Registry struct {
-	Name              string              `json:"name,omitempty"`
-	Type              string              `json:"type,omitempty"`
-	TargetRegistryUrl string              `json:"targetRegistryUrl,omitempty"`
-	Description       string              `json:"description,omitempty"`
-	Credential        *RegistryCredential `json:"credential,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	Provider    string              `json:"provider,omitempty"`
+	EndpointUrl string              `json:"endpointUrl,omitempty"`
+	Description string              `json:"description,omitempty"`
+	Credential  *RegistryCredential `json:"credential,omitempty"`
 }
 
 type RegistryCredential struct {
@@ -85,8 +85,8 @@ type RegistryCredential struct {
 
 type ProjectReq struct {
 	ProjectName  string `json:"projectName,omitempty"`
-	StorageLimit *int64 `json:"storageLimit,omitempty"`
-	IsPublic     *bool  `json:"isPublic,omitempty"`
+	StorageQuota *int64 `json:"storageQuota,omitempty"`
+	Public       *bool  `json:"public,omitempty"`
 }
 
 type Replication struct {
@@ -99,5 +99,5 @@ type Replication struct {
 	ReplicateDeletion    bool                 `json:"replicateDeletion,omitempty"`
 	Override             bool                 `json:"override,omitempty"`
 	Filters              []apiextensions.JSON `json:"filters,omitempty"`
-	Trigger              *apiextensions.JSON  `json:"trigger,omitempty"`
+	TriggerMode          *apiextensions.JSON  `json:"triggerMode,omitempty"`
 }

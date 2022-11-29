@@ -145,7 +145,7 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 	if errors.Is(err, &harborerrors.ErrRegistryNameAlreadyExists{}) {
 		update := &modelv2.RegistryUpdate{
 			Name:        &harborConfiguration.Spec.Registry.Name,
-			URL:         &harborConfiguration.Spec.Registry.TargetRegistryUrl,
+			URL:         &harborConfiguration.Spec.Registry.EndpointUrl,
 			Description: &harborConfiguration.Spec.Registry.Description,
 		}
 		if harborConfiguration.Spec.Registry.Credential != nil {
@@ -177,8 +177,8 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 
 	requestedProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
-		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
-		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
+		Public:       harborConfiguration.Spec.ProjectReq.Public,
+		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageQuota,
 		RegistryID:   &srcRegistry.ID,
 	}
 
@@ -193,8 +193,8 @@ func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Contex
 			RegistryID: srcRegistry.ID,
 			ProjectID:  existingProject.ProjectID,
 		}
-		// Note: Only positive values of storageLimit are supported through this method.
-		// Use the 'UpdateStorageQuotaByProjectID' method when `project.StorageLimit`is `-1`
+		// Note: Only positive values of storageQuota are supported through this method.
+		// Use the 'UpdateStorageQuotaByProjectID' method when `project.StorageQuota`is `-1`
 		unlimitedStorage := int64(-1)
 		if requestedProject.StorageLimit != &unlimitedStorage {
 			err = client.UpdateProject(ctx, updatedProject, requestedProject.StorageLimit)
@@ -239,8 +239,8 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 	}
 
 	var reqTrigger *modelv2.ReplicationTrigger
-	if harborConfiguration.Spec.Replication.Trigger != nil {
-		err = json.Unmarshal(harborConfiguration.Spec.Replication.Trigger.Raw, &reqTrigger)
+	if harborConfiguration.Spec.Replication.TriggerMode != nil {
+		err = json.Unmarshal(harborConfiguration.Spec.Replication.TriggerMode.Raw, &reqTrigger)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -293,8 +293,8 @@ func (r *HarborConfigurationReconciler) replicationRuleReconciliation(ctx contex
 func (r *HarborConfigurationReconciler) reconcileAll(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
 	registry := &modelv2.Registry{
 		Name:        harborConfiguration.Spec.Registry.Name,
-		Type:        harborConfiguration.Spec.Registry.Type,
-		URL:         harborConfiguration.Spec.Registry.TargetRegistryUrl,
+		Type:        harborConfiguration.Spec.Registry.Provider,
+		URL:         harborConfiguration.Spec.Registry.EndpointUrl,
 		Description: harborConfiguration.Spec.Registry.Description,
 		Credential:  (*modelv2.RegistryCredential)(harborConfiguration.Spec.Registry.Credential),
 	}
@@ -394,8 +394,8 @@ func deleteReplicationRule(ctx context.Context, harborConfiguration harborconfig
 func deleteProject(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
 	requestedProject := &modelv2.ProjectReq{
 		ProjectName:  harborConfiguration.Spec.ProjectReq.ProjectName,
-		Public:       harborConfiguration.Spec.ProjectReq.IsPublic,
-		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageLimit,
+		Public:       harborConfiguration.Spec.ProjectReq.Public,
+		StorageLimit: harborConfiguration.Spec.ProjectReq.StorageQuota,
 	}
 
 	existingProject, err := client.GetProject(ctx, requestedProject.ProjectName)
