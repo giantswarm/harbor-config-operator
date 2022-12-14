@@ -2,7 +2,7 @@ kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
 metadata:
   name: {{ include "harbor-config-operator.fullname" . }}
-  namespace: {{ include "resource.default.namespace" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "harbor-config-operator.labels" . | nindent 4 }}
 spec:
