@@ -1,8 +1,8 @@
 controllerManager:
   manager:
     image:
-      repository: ajazee/harborconfiguration
-      tag: v0.10
+      repository: giantswarm/harbor-config-operator
+      tag: [[ .Version ]]
     resources:
       requests:
         cpu: 10m
