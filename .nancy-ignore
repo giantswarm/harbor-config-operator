@@ -46,3 +46,10 @@ CVE-2022-21698 until=2023-01-01
 # Issue in golang.org/x/text@v0.3.7, looks like it's been patched and merged https://github.com/golang/go/issues/56152
 # used by multiple dependencies
 CVE-2022-32149 until=2023-01-01
+
+# Package not used by harbor-config-operator
+CVE-2022-23471 until=2023-01-01
+
+# Issue in golang/golang.org/x/net@v0.2.0, looks like it's been patched and merged https://github.com/golang/go/issues/56350
+# waiting for a release
+CVE-2022-41717 until=2023-01-01

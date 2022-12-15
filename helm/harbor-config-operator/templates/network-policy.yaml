@@ -1,0 +1,22 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ include "harbor-config-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "harbor-config-operator.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "harbor-config-operator.selectorLabels" . | nindent 6 }}
+  egress:
+    - {}
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP
+        - port: 8081
+          protocol: TCP
+  policyTypes:
+    - Egress
+    - Ingress
