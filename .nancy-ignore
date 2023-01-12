@@ -1,17 +1,17 @@
 # Fixed in https://github.com/beego/beego/releases/tag/v1.12.11 which is available in https://github.com/goharbor/harbor/releases/tag/v2.5.4. However, it appears that it's more likely that this PR (https://github.com/goharbor/harbor-operator/pull/970) will be merged first which also takes in beegov1.12.11.
-CVE-2022-31836 until=2023-01-01
+CVE-2022-31836 until=2023-06-30
 
 # The https://github.com/mittwald/goharbor-client is using v2.4.1 of harbor, to mitigate this CVE it needs to be updated to v2.5.4 or v2.6.2
-CVE-2021-27116 until=2023-01-01
-CVE-2021-27117 until=2023-01-01
-sonatype-2020-0472 until=2023-01-01
-sonatype-2022-5277 until=2023-01-01
+CVE-2021-27116 until=2023-06-30
+CVE-2021-27117 until=2023-06-30
+sonatype-2020-0472 until=2023-06-30
+sonatype-2022-5277 until=2023-06-30
 
 # This CVE doesn't appear to impact this project
 CVE-2021-39391 until=2023-11-22
 
 # This CVE is addressed in harbor v2.5.4 which is using v1.5.13 and in harbor v2.6.2 which is using v.1.6.6
-CVE-2022-31030 until=2023-01-01
+CVE-2022-31030 until=2023-06-30
 
 # This is associated with the https://github.com/go-ldap/ldap dependency, the harbor-operator and harbor-config-operator do not currently use this form of authentication.
 sonatype-2020-1055
@@ -27,11 +27,11 @@ CVE-2022-29153
 
 
 # An updated to jetstack/cert-manager to v1.10.1 within the harbor-operator and harbor-config-operator might mitiate this vulnerability. Unable to find trace of OSS Index ID.
-sonatype-2021-3619 until=2023-01-01
+sonatype-2021-3619 until=2023-06-30
 
 # No documented fixes found for gorm v1.9.8. The vulnerability description seems to suggest that it's fixed post v1.9.10
 # https://github.com/go-gorm/gorm/pull/2674#issuecomment-552668356 mentions it
-CVE-2019-15562 until=2023-01-01
+CVE-2019-15562 until=2023-06-30
 
 # minio v6.0.57 used by harbor-operator v1.3 - no details found
 sonatype-2022-5369
@@ -41,15 +41,15 @@ sonatype-2019-0890
 
 # Found in the prometheus/client-golang@v1.11.0, there exists a patch update which addresses this issue
 # raised a PR - https://github.com/goharbor/harbor-operator/pull/985
-CVE-2022-21698 until=2023-01-01
+CVE-2022-21698 until=2023-06-30
 
 # Issue in golang.org/x/text@v0.3.7, looks like it's been patched and merged https://github.com/golang/go/issues/56152
 # used by multiple dependencies
-CVE-2022-32149 until=2023-01-01
+CVE-2022-32149 until=2023-06-30
 
 # Package not used by harbor-config-operator
-CVE-2022-23471 until=2023-01-01
+CVE-2022-23471 until=2023-06-30
 
 # Issue in golang/golang.org/x/net@v0.2.0, looks like it's been patched and merged https://github.com/golang/go/issues/56350
 # waiting for a release
-CVE-2022-41717 until=2023-01-01
+CVE-2022-41717 until=2023-06-30
