@@ -46,3 +46,20 @@ CVE-2022-21698 until=2023-12-01
 # Issue in golang.org/x/text@v0.3.7, looks like it's been patched and merged https://github.com/golang/go/issues/56152
 # used by multiple dependencies
 CVE-2022-32149 until=2023-12-01
+
+# Bug with containerd that is fixed in containerd 1.6.12 and 1.5.16
+CVE-2022-23471 until=2023-12-01
+
+# Go default library net/http has a memory groeth bug as of 1.19.0
+CVE-2022-41717 until=2023-12-01
+
+# Helm versions prior to 3.10.3 can be subjected to uncontrolled resource consumption. Upgrade to >= 3.10.3 to fix.
+CVE-2022-23524 until=2023-12-01
+
+# Helm versions prior to 3.10.3 are subject to NULL Pointer Dereference. Upgrade to >= 3.10.3 to fix.
+CVE-2022-23525 until=2023-12-01
+CVE-2022-23526 until=2023-12-01
+
+# Vnformation exposure vunerability within k8s.io/apiserver as of:  https://github.com/kubernetes/apiserver/commit/76a233ebec7963131ddf3f59221bef5387d5b8ac
+# No more information available.
+sonatype-2022-6522 until=2023-12-01
