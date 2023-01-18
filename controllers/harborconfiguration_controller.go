@@ -153,7 +153,7 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 			update.AccessSecret = &harborConfiguration.Spec.Registry.Credential.AccessSecret
 			update.CredentialType = &harborConfiguration.Spec.Registry.Credential.Type
 		}
-		srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+		srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Registry.Name)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
