@@ -412,7 +412,7 @@ func deleteProject(ctx context.Context, harborConfiguration harborconfigurationv
 }
 
 func deleteRegistry(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Registry.Name)
 	if errors.Is(err, &harborerrors.ErrRegistryNotFound{}) {
 		return ctrl.Result{}, err
 	}
