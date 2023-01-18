@@ -46,10 +46,12 @@ spec:
                 type: object
               projectReq:
                 properties:
-                  public:
-                    type: boolean
                   projectName:
                     type: string
+                  proxyCacheRegistryName:
+                    type: string
+                  public:
+                    type: boolean
                   storageQuota:
                     format: int64
                     type: integer
@@ -63,8 +65,8 @@ spec:
                           is 'basic'.
                         type: string
                       access_secret:
-                        description: Access secret, e.g. password when credential type
-                          is 'basic'.
+                        description: Access secret, e.g. password when credential
+                          type is 'basic'.
                         type: string
                       type:
                         description: Credential type, such as 'basic', 'oauth'.
@@ -72,9 +74,9 @@ spec:
                     type: object
                   description:
                     type: string
-                  name:
-                    type: string
                   endpointUrl:
+                    type: string
+                  name:
                     type: string
                   provider:
                     type: string
@@ -127,3 +129,4 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+
