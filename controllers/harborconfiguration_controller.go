@@ -170,7 +170,7 @@ func (r *HarborConfigurationReconciler) registryReconciliation(ctx context.Conte
 }
 
 func (r *HarborConfigurationReconciler) projectReconciliation(ctx context.Context, harborConfiguration harborconfigurationv1alpha1.HarborConfiguration, registry modelv2.Registry, client *apiv2.RESTClient) (ctrl.Result, error) {
-	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.Replication.RegistryName)
+	srcRegistry, err := client.GetRegistryByName(ctx, harborConfiguration.Spec.ProjectReq.ProxyCacheRegistryName)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
