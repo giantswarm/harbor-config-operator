@@ -17,7 +17,7 @@ make build
 To run the controller locally against a local kind cluster, it's recommnded to port-forward to the `harbor-core` pod and set the HARBOR_CORE_URL. For instance:
 
 - ```sh
-  kubectl -n harbor-cluster port-forward $(kubectl -n harbor-cluster get pods -l goharbor.io/operator-controller=core -ojson | jq -r '.items[].metadata.name') 8080:80
+  kubectl -n harbor-cluster port-forward $(kubectl -n harbor-cluster get pods -l goharbor.io/operator-controller=core -ojson | jq -r '.items[].metadata.name') 8080:8080
   ```
 
 - ```sh

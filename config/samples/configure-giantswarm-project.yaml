@@ -1,0 +1,19 @@
+apiVersion: administration.harbor.configuration/v1alpha1
+kind: HarborConfiguration
+metadata:
+  name: setup-giantswarm-project
+spec:
+  harborTarget:
+    name: harbor-cluster
+    namespace: harbor-cluster
+    harborUsername: admin
+  registry:
+    name: docker
+    provider: docker-hub
+    endpointUrl: https://hub.docker.com
+    description: pull from dockerhub
+  projectReq:
+    projectName: giantswarm
+    storageQuota: -1
+    public: true
+    proxyCacheRegistryName: docker

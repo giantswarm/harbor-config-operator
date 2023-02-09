@@ -84,9 +84,10 @@ type RegistryCredential struct {
 }
 
 type ProjectReq struct {
-	ProjectName  string `json:"projectName,omitempty"`
-	StorageQuota *int64 `json:"storageQuota,omitempty"`
-	Public       *bool  `json:"public,omitempty"`
+	ProjectName            string `json:"projectName,omitempty"`
+	StorageQuota           *int64 `json:"storageQuota,omitempty"`
+	Public                 *bool  `json:"public,omitempty"`
+	ProxyCacheRegistryName string `json:"proxyCacheRegistryName,omitempty"`
 }
 
 type Replication struct {

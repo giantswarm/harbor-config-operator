@@ -46,6 +46,8 @@ spec:
                 properties:
                   projectName:
                     type: string
+                  proxyCacheRegistryName:
+                    type: string
                   public:
                     type: boolean
                   storageQuota:
