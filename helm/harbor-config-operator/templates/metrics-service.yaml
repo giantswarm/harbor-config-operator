@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "harbor-config-operator.fullname" . }}-controller-manager-metrics-service
+  name: {{ include "harbor-config-operator.fullname" . }}-metrics-service
   labels:
     control-plane: controller-manager
   {{- include "harbor-config-operator.labels" . | nindent 4 }}
