@@ -75,3 +75,7 @@ sonatype-2022-6522 until=2023-12-01
 
 # Issue with helm sdk: https://nvd.nist.gov/vuln/detail/CVE-2023-25165
 CVE-2023-25165 until=2023-12-01
+
+# bug has been fixed in containerd 1.6.18 and 1.5.18
+CVE-2023-25153 until=2023-12-01
+CVE-2023-25173 until=2023-12-01
