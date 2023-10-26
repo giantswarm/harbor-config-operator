@@ -21,6 +21,15 @@ CVE-2022-23526 until=2023-06-30
 # pkg:golang/k8s.io/apiserver@v0.25.0
 sonatype-2022-6522 until=2023-06-30
 CVE-2022-31030 until=2023-12-01
+CVE-2020-8561 until=2023-12-01
+
+# pkg:golang/google.golang.org/grpc@v1.47.0
+CVE-2023-32731 until=2023-12-01
+
+# pkg:golang/golang.org/x/net@v0.2.0
+CVE-2022-41723 until=2023-12-01
+CVE-2023-39325 until=2023-12-01
+CVE-2023-3978 until=2023-12-01
 
 # This is associated with the https://github.com/go-ldap/ldap dependency, the harbor-operator and harbor-config-operator do not currently use this form of authentication.
 sonatype-2020-1055
@@ -58,6 +67,8 @@ CVE-2022-32149 until=2023-12-01
 
 # Bug with containerd that is fixed in containerd 1.6.12 and 1.5.16
 CVE-2022-23471 until=2023-12-01
+CVE-2023-25173 until=2023-12-01
+CVE-2023-25153 until=2023-12-01
 
 # Go default library net/http has a memory groeth bug as of 1.19.0
 CVE-2022-41717 until=2023-12-01
