@@ -30,14 +30,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - policy
-    resources:
-      - podsecuritypolicies
-    resourceNames:
-      - {{ include "harbor-config-operator.crdInstall" . }}
-    verbs:
-      - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
