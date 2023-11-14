@@ -3,7 +3,7 @@ module github.com/giantswarm/harbor-config-operator
 go 1.19
 
 require (
-	github.com/mittwald/goharbor-client/v5 v5.4.2
+	github.com/mittwald/goharbor-client/v5 v5.5.0
 	github.com/onsi/ginkgo v1.16.5
 	k8s.io/apiextensions-apiserver v0.25.2
 	k8s.io/apimachinery v0.26.2
@@ -78,7 +78,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.mongodb.org/mongo-driver v1.11.2 // indirect
+	go.mongodb.org/mongo-driver v1.12.1 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
