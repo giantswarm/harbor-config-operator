@@ -2,6 +2,7 @@ apiVersion: administration.harbor.configuration/v1alpha1
 kind: HarborConfiguration
 metadata:
   name: setup-giantswarm-project
+  namespace: harbor-cluster
 spec:
   harborTarget:
     name: harbor-cluster

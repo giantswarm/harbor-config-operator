@@ -2,6 +2,7 @@ apiVersion: administration.harbor.configuration/v1alpha1
 kind: HarborConfiguration
 metadata:
   name: harborconfiguration
+  namespace: harbor-cluster
 spec:
   harborTarget:
     name: harborcluster-sample
